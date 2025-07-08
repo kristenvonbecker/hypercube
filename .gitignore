@@ -1,0 +1,75 @@
+# PyCharm specific files
+.idea/
+*.iml
+*.iws
+*.ipr
+# Sometimes created by older PyCharm versions or specific project types
+.project/
+
+# Python bytecode and compiled files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+# macOS specific Python cache
+.Python
+
+# Virtual environments
+# Pipenv's virtual environments are typically stored outside the project root by default.
+# However, if you configure PIPENV_VENV_IN_PROJECT=true, it will create a .venv/ folder.
+# It's good practice to include this just in case, or for other venv types (e.g., venv, virtualenv).
+.venv/
+env/
+venv/
+# sometimes created within a venv directly
+bin/
+
+# Pipenv specific files (generally, you *want* to commit Pipfile and Pipfile.lock)
+# The Pipfile.lock should usually be committed to ensure reproducible builds.
+# Uncomment next line ONLY if you explicitly do NOT want to commit the lock file (not recommended)
+# Pipfile.lock
+
+# Logs and runtime data
+*.log
+# Common for Django or other SQLite databases
+*.sqlite3
+tmp/
+temp/
+.DS_Store # macOS system file
+
+# Sensitive information and credentials
+# Environment variables file, often contains API keys, database credentials etc.
+.env
+# Flask specific environment variables
+.flaskenv
+# Configuration files that might contain sensitive data
+*.ini
+*.conf
+# Potentially sensitive config files
+*.yaml
+*.yml
+
+# Package distribution files
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Installer files
+*.egg
+*.whl
+
+# C extensions
+*.so
+
+# Jupyter Notebook files
+.ipynb_checkpoints/
+
+# Test/Coverage files
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Miscellaneous
+# Some editors create this for local history
+.history/
