@@ -6,6 +6,17 @@
 # Sometimes created by older PyCharm versions or specific project types
 .project/
 
+# macOS specific files and folders
+.DS_Store
+**/.DS_Store
+.localized
+.AppleDouble
+.LSOverride
+._*
+.Trashes
+.Spotlight-V100
+.TemporaryItems
+
 # Python bytecode and compiled files
 __pycache__/
 *.pyc
