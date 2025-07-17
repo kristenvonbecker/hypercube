@@ -221,110 +221,110 @@ class Hypercube:
 
         return projected_vertices
 
-    def unfold(self, unfolding_type='default', step=0):
-        """
-        Conceptual method for unfolding the hypercube.
-        The output format would depend heavily on the visualization target.
-
-        Args:
-            unfolding_type (str): Specifies which unfolding to perform (e.g., 'cross_tesseract', 'net').
-                                  This parameter would control the "unfolding strategy".
-            step (float): A parameter for animating the unfolding process, from 0 (closed) to 1 (fully unfolded).
-                          This would apply a transformation based on the unfolding chosen.
-
-        Returns:
-            A representation of the unfolded hypercube's components,
-            e.g., a list of Face objects with transformed coordinates, or a flat 2D net.
-            For AR/VR, this might be a list of 3D models or transforms.
-        """
-        # This method is highly conceptual and would require significant
-        # mathematical definition of specific unfoldings.
-
-        # Example: Unfolding a 3D cube into a 2D net (a cross shape)
-        if self.dimension == 3 and unfolding_type == 'net':
-            if not (0 <= step <= 1):
-                raise ValueError("Step for unfolding must be between 0 and 1.")
-
-            unfolded_vertices = {idx: Vertex(v.coordinates.copy(), v.initial_index)
-                                 for idx, v in self.vertices_map.items()}
-
-            # Define faces by their fixed axis and value (0 or 1)
-            # For a unit cube [0,1]^3
-            # x=0 face: indices {0, 1, 2, 3}
-            # x=1 face: indices {4, 5, 6, 7}
-            # y=0 face: indices {0, 1, 4, 5}
-            # y=1 face: indices {2, 3, 6, 7}
-            # z=0 face: indices {0, 2, 4, 6}
-            # z=1 face: indices {1, 3, 5, 7}
-
-            # This is a simplified example for a 3D cube's standard net unfolding:
-            # Imagine the x=1 face (4,5,6,7) as the central face.
-            # Then unfold others around it.
-
-            # The actual transformations would be rotations of faces around shared edges.
-            # For a step `s`, rotate by `s * 90` degrees.
-
-            # Example: Unfold the y=0 face (0,1,4,5) off the x=1 face (4,5,6,7) around edge (4,5)
-            # The rotation axis is the edge connecting common vertices (e.g., (4,5)).
-            # The rotation angle depends on 'step'.
-
-            # For a zoetrope, you might unfold a tesseract into 3D cells, then animate those.
-            # Each cell would be a 3D cube. The 'unfolding_type' could specify
-            # which 3D cube is the 'center' and how the others attach.
-
-            print(f"Unfolding type '{unfolding_type}' at step {step} for a {self.dimension}-D hypercube is conceptual.")
-            print("This would involve defining specific rotation axes and angles for each k-face.")
-
-            # Placeholder for returning transformed face coordinates
-            transformed_faces = {}
-            for k, faces_set in self.k_faces.items():
-                transformed_faces[k] = []
-                for face_obj in faces_set:
-                    # In a real implementation, apply transformations based on unfolding_type and step
-                    # This would involve rotations around shared edges, displacing the face vertices.
-                    transformed_coords = {idx: unfolded_vertices[idx].coordinates for idx in face_obj.vertices_indices}
-                    transformed_faces[k].append({
-                        'indices': list(face_obj.vertices_indices),
-                        'coords': [transformed_coords[idx].tolist() for idx in face_obj.vertices_indices]
-                    })
-            return transformed_faces
-
-        elif self.dimension == 4 and unfolding_type == 'cross_tesseract':
-            # This is the famous 'tesseract net' projection from 4D to 3D
-            # It involves selecting one 'cell' (3D cube) as the central one,
-            # and then "unfolding" the other 7 cells around it.
-            # Each cell would effectively be translated and rotated in 3D space.
-
-            print(f"Conceptual unfolding for 4D hypercube (tesseract net) at step {step}.")
-            print("This requires specific mapping of 3D cells and their rotations/translations.")
-
-            # This would involve selecting one 'central' 3-face (cube)
-            # and then rotating the other 3-faces around their common 2-faces (squares)
-            # into the 3D space of the zoetrope.
-
-            # The result would be a collection of 3D cube models (8 of them)
-            # positioned and rotated in a way that represents the unfolded state.
-
-            # Placeholder for returning transformed cell coordinates
-            transformed_cells = []
-            if 3 in self.k_faces:
-                for cell_face in self.k_faces[3]:
-                    # Apply complex transformations here based on unfolding_type and step
-                    cell_transformed_vertices = {}
-                    for v_idx in cell_face.vertices_indices:
-                        # For a real unfolding, these coordinates would be calculated
-                        # based on the unfolding process (e.g., rotating entire cubes)
-                        cell_transformed_vertices[v_idx] = self.vertices_map[v_idx].coordinates.copy()
-                    transformed_cells.append({
-                        'indices': list(cell_face.vertices_indices),
-                        'coords': [cell_transformed_vertices[idx].tolist() for idx in cell_face.vertices_indices]
-                    })
-            return transformed_cells
-
-
-        else:
-            print(f"Unfolding type '{unfolding_type}' for {self.dimension}-D hypercube not implemented or recognized.")
-            return None
+    # def unfold(self, unfolding_type='default', step=0):
+    #     """
+    #     Conceptual method for unfolding the hypercube.
+    #     The output format would depend heavily on the visualization target.
+    #
+    #     Args:
+    #         unfolding_type (str): Specifies which unfolding to perform (e.g., 'cross_tesseract', 'net').
+    #                               This parameter would control the "unfolding strategy".
+    #         step (float): A parameter for animating the unfolding process, from 0 (closed) to 1 (fully unfolded).
+    #                       This would apply a transformation based on the unfolding chosen.
+    #
+    #     Returns:
+    #         A representation of the unfolded hypercube's components,
+    #         e.g., a list of Face objects with transformed coordinates, or a flat 2D net.
+    #         For AR/VR, this might be a list of 3D models or transforms.
+    #     """
+    #     # This method is highly conceptual and would require significant
+    #     # mathematical definition of specific unfoldings.
+    #
+    #     # Example: Unfolding a 3D cube into a 2D net (a cross shape)
+    #     if self.dimension == 3 and unfolding_type == 'net':
+    #         if not (0 <= step <= 1):
+    #             raise ValueError("Step for unfolding must be between 0 and 1.")
+    #
+    #         unfolded_vertices = {idx: Vertex(v.coordinates.copy(), v.initial_index)
+    #                              for idx, v in self.vertices_map.items()}
+    #
+    #         # Define faces by their fixed axis and value (0 or 1)
+    #         # For a unit cube [0,1]^3
+    #         # x=0 face: indices {0, 1, 2, 3}
+    #         # x=1 face: indices {4, 5, 6, 7}
+    #         # y=0 face: indices {0, 1, 4, 5}
+    #         # y=1 face: indices {2, 3, 6, 7}
+    #         # z=0 face: indices {0, 2, 4, 6}
+    #         # z=1 face: indices {1, 3, 5, 7}
+    #
+    #         # This is a simplified example for a 3D cube's standard net unfolding:
+    #         # Imagine the x=1 face (4,5,6,7) as the central face.
+    #         # Then unfold others around it.
+    #
+    #         # The actual transformations would be rotations of faces around shared edges.
+    #         # For a step `s`, rotate by `s * 90` degrees.
+    #
+    #         # Example: Unfold the y=0 face (0,1,4,5) off the x=1 face (4,5,6,7) around edge (4,5)
+    #         # The rotation axis is the edge connecting common vertices (e.g., (4,5)).
+    #         # The rotation angle depends on 'step'.
+    #
+    #         # For a zoetrope, you might unfold a tesseract into 3D cells, then animate those.
+    #         # Each cell would be a 3D cube. The 'unfolding_type' could specify
+    #         # which 3D cube is the 'center' and how the others attach.
+    #
+    #         print(f"Unfolding type '{unfolding_type}' at step {step} for a {self.dimension}-D hypercube is conceptual.")
+    #         print("This would involve defining specific rotation axes and angles for each k-face.")
+    #
+    #         # Placeholder for returning transformed face coordinates
+    #         transformed_faces = {}
+    #         for k, faces_set in self.k_faces.items():
+    #             transformed_faces[k] = []
+    #             for face_obj in faces_set:
+    #                 # In a real implementation, apply transformations based on unfolding_type and step
+    #                 # This would involve rotations around shared edges, displacing the face vertices.
+    #                 transformed_coords = {idx: unfolded_vertices[idx].coordinates for idx in face_obj.vertices_indices}
+    #                 transformed_faces[k].append({
+    #                     'indices': list(face_obj.vertices_indices),
+    #                     'coords': [transformed_coords[idx].tolist() for idx in face_obj.vertices_indices]
+    #                 })
+    #         return transformed_faces
+    #
+    #     elif self.dimension == 4 and unfolding_type == 'cross_tesseract':
+    #         # This is the famous 'tesseract net' projection from 4D to 3D
+    #         # It involves selecting one 'cell' (3D cube) as the central one,
+    #         # and then "unfolding" the other 7 cells around it.
+    #         # Each cell would effectively be translated and rotated in 3D space.
+    #
+    #         print(f"Conceptual unfolding for 4D hypercube (tesseract net) at step {step}.")
+    #         print("This requires specific mapping of 3D cells and their rotations/translations.")
+    #
+    #         # This would involve selecting one 'central' 3-face (cube)
+    #         # and then rotating the other 3-faces around their common 2-faces (squares)
+    #         # into the 3D space of the zoetrope.
+    #
+    #         # The result would be a collection of 3D cube models (8 of them)
+    #         # positioned and rotated in a way that represents the unfolded state.
+    #
+    #         # Placeholder for returning transformed cell coordinates
+    #         transformed_cells = []
+    #         if 3 in self.k_faces:
+    #             for cell_face in self.k_faces[3]:
+    #                 # Apply complex transformations here based on unfolding_type and step
+    #                 cell_transformed_vertices = {}
+    #                 for v_idx in cell_face.vertices_indices:
+    #                     # For a real unfolding, these coordinates would be calculated
+    #                     # based on the unfolding process (e.g., rotating entire cubes)
+    #                     cell_transformed_vertices[v_idx] = self.vertices_map[v_idx].coordinates.copy()
+    #                 transformed_cells.append({
+    #                     'indices': list(cell_face.vertices_indices),
+    #                     'coords': [cell_transformed_vertices[idx].tolist() for idx in cell_face.vertices_indices]
+    #                 })
+    #         return transformed_cells
+    #
+    #
+    #     else:
+    #         print(f"Unfolding type '{unfolding_type}' for {self.dimension}-D hypercube not implemented or recognized.")
+    #         return None
 
     def get_k_faces(self, k):
         """Returns the set of k-dimensional faces (Face objects)."""

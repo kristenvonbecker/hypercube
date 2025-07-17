@@ -68,15 +68,15 @@ def run():
     print("Projected tesseract vertex 15:", projected_3d_persp[15].coordinates.tolist())
 
 
-    print("\n--- Testing Conceptual Unfolding (3D cube) ---")
-    unfolded_cube_data = cube_for_proj.unfold(unfolding_type='net_3d_cube', step=0.5)
-    if unfolded_cube_data:
-        print(f"Unfolded 2D faces of cube (example for one face): {unfolded_cube_data[2][0]}")
-
-    print("\n--- Testing Conceptual Unfolding (4D tesseract) ---")
-    unfolded_tesseract_data = tesseract.unfold(unfolding_type='cross_tesseract', step=0.25)
-    if unfolded_tesseract_data:
-        print(f"Unfolded 3D cells of tesseract (example for one cell): {unfolded_tesseract_data[3][0]}")
+    # print("\n--- Testing Conceptual Unfolding (3D cube) ---")
+    # unfolded_cube_data = cube_for_proj.unfold(unfolding_type='net_3d_cube', step=0.5)
+    # if unfolded_cube_data:
+    #     print(f"Unfolded 2D faces of cube (example for one face): {unfolded_cube_data[2][0]}")
+    #
+    # print("\n--- Testing Conceptual Unfolding (4D tesseract) ---")
+    # unfolded_tesseract_data = tesseract.unfold(unfolding_type='cross_tesseract', step=0.25)
+    # if unfolded_tesseract_data:
+    #     print(f"Unfolded 3D cells of tesseract (example for one cell): {unfolded_tesseract_data[3][0]}")
 
 if __name__ == "__main__":
     run()
