@@ -1,6 +1,7 @@
 import numpy as np
 import plotly.graph_objects as go
 
+
 def plot_hypercube_3d(vertices_dict, edges_list, title="Hypercube Projection"):
     """
     Plots the vertices and edges of a 3D representation of the hypercube
@@ -29,7 +30,6 @@ def plot_hypercube_3d(vertices_dict, edges_list, title="Hypercube Projection"):
             return coords[0], 0.0, 0.0 # Pad Y, Z with zeros for 1D projection
         else: # 0D point
             return 0.0, 0.0, 0.0
-
 
     # Extract coordinates for Plotly
     x_coords = [get_padded_coords(v)[0] for v in vertices_dict.values()]
