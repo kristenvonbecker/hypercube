@@ -1,12 +1,10 @@
 import numpy as np
 # some of the solid2 imports are incorrect
-from solid2 import sphere, cylinder, polyhedron, union, translate, rotate, color
-from solid2.core.object_base import module, ref, comment, empty # These are often directly on object_base now
+from solid2 import sphere, cylinder, polyhedron, union, color
+from solid2.core.object_base import module, ref, empty # These are often directly on object_base now
 from solid2.core.utils import Code # Code is now typically in solid2.core.utils
 
-import os
-
-from structure import Hypercube, Vertex, Face # Corrected import path
+from src.hypercube.geometry.structure import Hypercube  # Corrected import path
 
 # --- Helper Functions for SCAD Generation with solid2 ---
 
