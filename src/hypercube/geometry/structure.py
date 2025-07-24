@@ -151,22 +151,17 @@ class Hypercube:
 
     def translate(self, vector):
         """
-        Translates the entire hypercube by a given vector.
-        Args:
-            vector (list/np.array): A list or numpy array of length `self.dimension`.
+        Translates the hypercube and returns the instance for method chaining.
         """
         if len(vector) != self.dimension:
             raise ValueError(f"Translation vector must match hypercube dimension ({self.dimension}).")
         for vertex_obj in self.vertices_map.values():
             vertex_obj.coordinates += np.array(vector, dtype=float)
+        return self
 
     def rotate(self, plane_indices, angle):
         """
-        Rotates the hypercube in a specified 2D plane.
-        Args:
-            plane_indices (list/tuple): A pair of integers [i, j] representing the axes of the rotation plane.
-                                        e.g., [0, 1] for XY plane, [0, 3] for XW plane in a 4D hypercube.
-            angle (float): The rotation angle in radians.
+        Rotates the hypercube and returns the instance for method chaining.
         """
         if len(plane_indices) != 2 or not all(0 <= i < self.dimension for i in plane_indices):
             raise ValueError(f"Plane indices must be a pair of integers within [0, {self.dimension - 1}].")
@@ -175,16 +170,15 @@ class Hypercube:
         cos_theta = np.cos(angle)
         sin_theta = np.sin(angle)
 
-        # Create a rotation matrix for the specified plane
         rotation_matrix = np.identity(self.dimension)
         rotation_matrix[i, i] = cos_theta
         rotation_matrix[i, j] = -sin_theta
         rotation_matrix[j, i] = sin_theta
         rotation_matrix[j, j] = cos_theta
 
-        # Apply the rotation matrix to each vertex's coordinates
         for vertex_obj in self.vertices_map.values():
             vertex_obj.coordinates = np.dot(rotation_matrix, vertex_obj.coordinates)
+        return self
 
     def project(self, target_dimension, projection_type='orthogonal', perspective_params=None):
         """
@@ -409,11 +403,7 @@ class Hypercube:
                 # Only v2 is on the hyperplane
                 intersection_points_full_dim.append(v2_coords)
             # Case 2: The hyperplane intersects the interior of the edge
-            elif (coord1_val < hyperplane_value and coord2_val > hyperplane_value) or \
-                    (coord1_val > hyperplane_value and coord2_val < hyperplane_value):
-                # Linear interpolation to find the intersection point
-                # t = (hyperplane_value - coord1_val) / (coord2_val - coord1_val)
-                # P = v1 + t * (v2 - v1)
+            elif (coord1_val - hyperplane_value) * (coord2_val - hyperplane_value) < 0:
                 delta = coord2_val - coord1_val
                 if np.isclose(delta, 0):  # Should not happen if signs are different, but for safety
                     continue
