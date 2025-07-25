@@ -1,5 +1,5 @@
 from src.hypercube.geometry.structure import Hypercube
-from src.hypercube.plotting.vizualize import plot_hypercube_3d
+from src.hypercube.graphics.plot_3d import plot_hypercube_3d
 
 import numpy as np
 # ---Plotly configuration ---------------------
