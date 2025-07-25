@@ -1,8 +1,7 @@
 import numpy as np
 import itertools
 from itertools import combinations
-from scipy.spatial import ConvexHull  # New import for cross_section
-from collections import defaultdict  # New import for cross_section
+from scipy.spatial import ConvexHull
 
 
 # --- Vertex Class ---
@@ -258,90 +257,6 @@ class Hypercube:
             raise ValueError(f"Unknown projection type: {projection_type}. Choose 'orthogonal' or 'perspective'.")
 
         return projected_vertices
-
-    # def unfold(self, unfolding_type='default', step=0.0):
-    #     """
-    #     Conceptual method for unfolding the hypercube.
-    #     This method would transform the hypercube's components (vertices of its faces)
-    #     to simulate an unfolding process in a lower dimension.
-    #
-    #     Args:
-    #         unfolding_type (str): Specifies which unfolding strategy to use.
-    #                               - 'default': A basic conceptual unfolding (e.g., simple rotations).
-    #                               - 'net_3d_cube': For 3D cube, unfolds into a 2D cross net.
-    #                               - 'cross_tesseract': For 4D hypercube, unfolds into 8 3D cubes in a cross shape.
-    #         step (float): A normalized animation parameter from 0.0 (fully folded) to 1.0 (fully unfolded).
-    #                       Intermediate values represent partial unfolding.
-    #
-    #     Returns:
-    #         dict: A dictionary containing lists of transformed k-faces.
-    #               Each k-face will be represented by a dict with its original indices
-    #               and its new, transformed coordinates for visualization.
-    #               Returns None if the type is not implemented.
-    #     """
-    #     if not (0.0 <= step <= 1.0):
-    #         raise ValueError("Unfolding step must be between 0.0 and 1.0.")
-    #
-    #     # Create a copy of vertex coordinates to work with for unfolding
-    #     # This allows modifications without affecting the original hypercube state
-    #     unfolded_vertex_coords = {
-    #         idx: v.coordinates.copy() for idx, v in self.vertices_map.items()
-    #     }
-    #
-    #     # The actual unfolding logic is complex and depends on the specific type
-    #     # For a practical zoetrope, you'd likely implement specific cases.
-    #
-    #     if self.dimension == 3 and unfolding_type == 'net_3d_cube':
-    #         # Example: Unfolding a 3D cube into a 2D cross net
-    #         # This would involve rotations of faces around shared edges onto a common plane.
-    #         # The 'step' would control the angle of rotation.
-    #
-    #         # Identify the "central" face, e.g., the z=0 face (indices {0, 2, 4, 6})
-    #         central_face_indices = frozenset({0, 2, 4, 6})
-    #
-    #         # Simplified rotation of other faces relative to the central face
-    #         # For each face, identify its shared edge with the central face
-    #         # and rotate it around that edge.
-    #
-    #         # This part is illustrative. Actual rotations require finding rotation axes and applying transforms.
-    #         # For a real implementation, you'd define which faces unfold from which edge.
-    #         print(f"Applying '{unfolding_type}' unfolding for 3D cube at step {step}")
-    #
-    #     elif self.dimension == 4 and unfolding_type == 'cross_tesseract':
-    #         # This is the classic unfolding of a tesseract into eight 3D cubes.
-    #         # One 3D cube is central, and the other seven are rotated/translated
-    #         # in 3D space to form the cross shape.
-    #         # The 'step' would control the rotation angle of these 3D cells.
-    #
-    #         # This would involve selecting one 'central' 3-face (a 3D cube).
-    #         # Then, for each adjacent 3-face, identify their common 2-face (a square)
-    #         # and rotate the adjacent 3-face around that common 2-face.
-    #         print(f"Applying '{unfolding_type}' unfolding for 4D hypercube at step {step}")
-    #
-    #     else:
-    #         print(
-    #             f"Unfolding type '{unfolding_type}' for {self.dimension}-D hypercube is not specifically implemented here.")
-    #         print("Returning current coordinates for all vertices/faces.")
-    #
-    #     # Construct the output format: a dict of lists of transformed k-faces
-    #     transformed_k_faces = {}
-    #     for k, faces_set in self.k_faces.items():
-    #         transformed_k_faces[k] = []
-    #         for face_obj in faces_set:
-    #             face_coords_list = []
-    #             for v_idx in face_obj.vertices_indices:
-    #                 # In a full implementation, `unfolded_vertex_coords[v_idx]` would be the
-    #                 # transformed coordinate for `v_idx` based on the unfolding logic.
-    #                 face_coords_list.append(unfolded_vertex_coords[v_idx].tolist())
-    #
-    #             # You might also want to add the ordered vertices for faces for rendering
-    #             # (This would be another method, e.g., `face_obj.get_ordered_coordinates()`)
-    #             transformed_k_faces[k].append({
-    #                 'initial_indices': sorted(list(face_obj.vertices_indices)),
-    #                 'dimension': face_obj.dimension,
-    #                 'current_coords': face_coords_list
-    #             })
-    #     return transformed_k_faces
 
     def cross_section(self, hyperplane_dim=None, hyperplane_value=0.0):
         """
