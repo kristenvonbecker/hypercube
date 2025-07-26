@@ -1,3 +1,5 @@
+# test_scad.py
+
 from src.hypercube.geometry.structure import Hypercube
 from src.hypercube.scad.scad import ScadExporter
 
@@ -7,9 +9,9 @@ import os
 OUTPUT_DIR = "output/scad/tests"
 
 
-def test_perspective_projection(
+def test_projection(
         projection_type="perspective",
-        perspective_params={'view_distance': 2.0}
+        perspective_params={'view_distance': 1.5}
 ):
     """
     Tests exporting a 3D perspective projection of a rotated 4D hypercube.
@@ -32,7 +34,7 @@ def test_perspective_projection(
     )
 
 
-def test_cross_section(slice_value=0.5):
+def test_cross_section(slice_value=0.25):
     """
     Tests exporting a 3D cross-section of a doubly-rotated 4D hypercube.
     """
@@ -64,7 +66,7 @@ if __name__ == "__main__":
     print("= Running SCAD Generation Tests   =")
     print("===================================")
 
-    test_perspective_projection()
+    test_projection()
     test_cross_section()
 
     print("\n===================================")
