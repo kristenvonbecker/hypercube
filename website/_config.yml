@@ -1,0 +1,64 @@
+# Welcome to Jekyll!
+#
+# This config file is meant for settings that affect your whole blog, values
+# which you are expected to set up once and rarely edit after that. If you find
+# yourself editing this file very often, consider using Jekyll's data files
+# feature for the data you need to update frequently.
+#
+# For technical reasons, this file is *NOT* reloaded automatically when you use
+# 'bundle exec jekyll serve'. If you change this file, please restart the server process.
+#
+# If you need help with YAML syntax, here are some quick references for you:
+# https://learn-the-web.algonquindesign.ca/topics/markdown-yaml-cheat-sheet/#yaml
+# https://learnxinyminutes.com/docs/yaml/
+#
+# Site settings
+# These are used to personalize your new site. If you look in the HTML files,
+# you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
+# You can create any custom variable you would like, and they will be accessible
+# in the templates via {{ site.myvariable }}.
+
+# Site settings
+title: "Hypercube: A Really Dope Zoetrope"
+description: >- # This means to ignore newlines until "baseurl:"
+  Official website for "Hypercube: A Really Dope Zoetrope", a precision-engineered kinematic art installation
+  animating the complexities of four-dimensional geometry.
+baseurl: "/hypercube"    # The subpath of your site, e.g. /blog
+url: "https://kristenvonbecker.github.io"   # The base hostname & protocol for your site, e.g. http://example.com
+#github_username: kristenvonbecker
+defaults:
+  -
+    scope:
+      path: "" # an empty string here means all files in the project
+      type: "posts"
+    values:
+      image_path: /assets/images/
+
+# Build settings
+markdown: kramdown
+theme: minima # Or a different theme if you choose later
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - github-pages # Ensure this is listed if you're not using the Gemfile group method
+
+# Kramdown settings
+kramdown:
+  input: GFM
+  hard_wrap: false
+  toc_levels: 2..6
+
+# Exclude from processing.
+# The following items will not be processed, by default.
+# Any item listed under the `exclude:` key here will be automatically excluded.
+# The `keep_files:` key can be used to override this default.
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - _site/ # Explicitly exclude the build output directory
+  - .jekyll-cache/ # Explicitly exclude the cache directory

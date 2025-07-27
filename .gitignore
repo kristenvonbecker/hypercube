@@ -56,9 +56,6 @@ temp/
 # Configuration files that might contain sensitive data
 *.ini
 *.conf
-# Potentially sensitive config files
-*.yaml
-*.yml
 
 # Package distribution files
 dist/

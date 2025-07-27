@@ -1,0 +1,8 @@
+#- name: Concepts
+#  link: /concepts/
+- name: Code
+  link: https://github.com/kristenvonbecker/hypercube
+#- name: Zoetrope
+#  link: /zoetrope/
+- name: Hyperblog
+  link: /blog/

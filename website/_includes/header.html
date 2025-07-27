@@ -1,0 +1,12 @@
+<header class="site-header">
+  <a class="site-title" href="{{ "/" | relative_url }}">Hypercube: A Really Dope Zoetrope</a>
+  <nav class="site-nav">
+      {% for item in site.data.navigation %}
+        {% if item.link contains "http" %}
+          <a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">{{ item.name }}</a>
+        {% else %}
+          <a href="{{ item.link | relative_url }}">{{ item.name }}</a>
+        {% endif %}
+      {% endfor %}
+  </nav>
+</header>

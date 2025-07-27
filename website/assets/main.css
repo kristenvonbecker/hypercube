@@ -1,0 +1,140 @@
+/* set a comfortable base for fonts and line spacing */
+html {
+  font-size: 18px; /* Sets the base font size for the 'rem' unit */
+}
+
+body {
+  line-height: 1.6; /* increases space between lines of text */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", "Arial", sans-serif;
+  color: #333;
+}
+
+/* create a centered content column with a maximum width */
+.wrapper {
+  max-width: 55rem;   /* maximum width of the content area */
+  margin-left: auto;  /* these two lines center the wrapper */
+  margin-right: auto;
+  padding-left: 2rem; /* adds breathing room on smaller screens */
+  padding-right: 2rem;
+}
+
+.page-content {
+  /* This adds vertical space between the header and the content */
+  padding-top: 3rem;
+}
+
+/* add some vertical rhythm to common elements. */
+h1, h2, h3, p, ul, ol {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+a {
+  color: #4a4a4a; /* Sets the link color */
+  /*text-decoration: none; !* Removes the underline *!*/
+}
+
+/* --- Navigation Bar --- */
+
+/* This turns the header into a flex container to control alignment. */
+.site-header {
+  display: flex;
+  justify-content: space-between; /* This pushes the navigation to the right. */
+  align-items: baseline;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  padding-top: 1rem;
+}
+
+.site-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  text-decoration: none;
+  color: #333;
+}
+
+/* This adds horizontal space between each navigation link. */
+.site-nav a {
+  margin-left: 2rem;
+  color: #333;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.site-footer {
+  padding: 2rem;
+  margin-top: 4rem;
+  font-style: italic;
+  color: #333;
+  text-align: center; /* This will center the copyright text */
+}
+
+/* Styles the links within the footer */
+.site-footer a {
+  color: #333;
+  text-align: center;
+  text-decoration: none;
+}
+
+.hero-image-container {
+  text-align: center;
+  margin-bottom: 1rem; /* Adds space AFTER the image */
+}
+
+.hero-image-container img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0px;
+  box-shadow: none;
+}
+
+.hero-image-container figcaption {
+  text-align: center;
+  font-size: 0.9em;
+  font-style: italic;
+  color: #666; /* A medium gray color */
+  margin-top: 10px; /* Adds some space between the image and the caption */
+}
+
+.rss-subscribe-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background-color: #f7f7f7;
+  text-decoration: none;
+  font-weight: bold;
+  color: #333;
+  float: right;
+  margin-left: 1rem;
+  margin-bottom: 1rem;
+}
+
+.rss-subscribe-link:hover {
+  background-color: #eee;
+}
+
+.rss-subscribe-link svg {
+  width: 1rem;
+  height: 1rem;
+  stroke: #f26522; /* Classic RSS Orange */
+}
+
+/* Custom Table Styles */
+table {
+  /*width: 100%; !* Make table span full width of its container *!*/
+  border-collapse: collapse; /* A modern border style */
+  margin-bottom: 1.5em; /* Add some space below the table */
+}
+
+th, td {
+  border: 1px solid #ccc; /* Add a 1px solid gray border */
+  padding: 8px; /* Add padding inside each cell */
+  text-align: left; /* Align text to the left */
+}
+
+th {
+  background-color: #f2f2f2; /* Add a light gray background to headers */
+  font-weight: bold;
+}
