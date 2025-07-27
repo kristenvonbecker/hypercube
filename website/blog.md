@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Hyperblog
+permalink: /blog/
 ---
 
 # The Hyperblog
