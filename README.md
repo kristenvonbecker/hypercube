@@ -1,61 +1,91 @@
 # Hypercube: A Really Dope Zoetrope
 
-## Project Overview
+This repository contains the full source code and design files for *Hypercube: A Really Dope Zoetrope*, a kinematic art 
+installation that illustrates lower-dimensional representations of a hypercube. The project combines mathematics, 3D modeling 
+and printing, manual and CNC woodworking, and microcontroller integration to create a stroboscopic 3D zoetrope.
 
-*Hypercube: A Really Dope Zoetrope* is a precision-engineered kinematic art installation designed to provide a beautiful 
-and tangible representation of four-dimensional space and movement within it. This project embraces a multidisciplinary 
-approach, integrating mathematics, coding, and art, where the former two serve as essential tools for creating the latter.
+This installation is being developed for the Mathematical Art Exhibit at the 2027 Joint Mathematics Meeting. It serves as a tool 
+for both artistic expression and mathematical visualization, exploring concepts like projection, cross-sections, and unfolding 
+through a tangible, animated medium.
 
-The primary goal of *Hypercube* is to illustrate fundamental geometric properties and the nature of dimension in 
-surprising yet intuitive ways. This project is designed to be appreciated by a broad audience, regardless of mathematical
-background or lack thereof. 
+## Key Features
 
-**_Note:_** _Due to the stroboscopic nature of the installation, this exhibit may not be suitable for individuals with 
-seizure-related disorders, such as epilepsy._
+- **Mathematical Modeling:** A robust Python `Hypercube` class for generating $n$-dimensional cubes and their constituent 
+$k$-faces (vertices, edges, faces, etc.) using principles of graph theory.
+- **Geometric Transformations:** Methods for performing rotations, translations, and both orthogonal and perspective projections 
+as a means of dimension reduction.
+- **Cross-Sections:** Functionality to calculate the cross-sectional shape created when slicing the hypercube with a hyperplane.
+- **Nets:** A method for constructing the net of a hypercube by specifying a sequence of $k$-faces to disassociate.  
+- **3D Model Generation:** Scripts to export the resulting 3D geometric forms as `.scad` files, ready for import to OpenSCAD.
+- **Project Website:** A Jekyll-based site for documenting progress, sharing blog posts, and explaining the core mathematical and 
+technical concepts.
 
-## Components
+## Directory Structure
 
-*Hypercube* is composed of several integrated components:
+The repository is organized to separate the core logic from generative scripts, experiments, and output files.
 
-* **Physical Zoetrope:** The main rotational structure is primarily constructed from wood, utilizing 
-both manual and digital fabrication techniques.
-* **3D Printed Models:** These include a collection lower-dimensional representations of a "unit hypercube" which are animated
-stroboscopically by the zeotrope.
-* **Drivetrain:** The zoetrope's rotational motion is driven by several stepper motors mechanically coupled to a large drive
-gear secured to one side of the main bearing. The gears and bearing plates will be fabricated from wood. 
-* **Electronics:** The system's motion and lighting are controlled by an Arduino Mega, which synchronizes the
-action of the (multiple) stepper motors and LEDs.
-* **Software:** Custom software includes Python scripts for generating 3D models (using OpenSCAD) and controlling the 
-zoetrope's operation and functionality.
+```bash
+.
+├── src/                # Core Python source code
+│   └── hypercube/      # Main package for the project
+│       ├── geometry/   # Defines the Hypercube class (structure.py)
+│       ├── exporters/  # Scripts for exporting data (e.g., to SCAD)
+│       └── ...
+├── scripts/            # Standalone Python scripts for generating assets
+│   └── generators/     # e.g., generate_scad.py to create 3D models
+├── notebooks/          # Jupyter notebooks for experimentation and visualization
+├── output/             # Default location for generated files (e.g., .scad, .stl)
+├── tests/              # Unit and integration tests for the Python code
+├── website/            # Source for the Jekyll-based project website
+└── ...                 # Configuration files (Pipfile, LICENSE, etc.)
 
-## Current Status
+```
 
-The project is currently in the **design phase** across all domains.
+## Installation and Usage
 
-* Modeling for the zoetrope prototype is complete.
-* Prototypes for the 3D-printable hypercube models are nearing completion.
-* Work on the electronics system is pending.
+To run the Python scripts and generate your own 3D-printable models, you'll need to set up a local environment first. 
 
-The fabrication stage for the zoetrope prototype and 3D printing of the hypercube prototypes are anticipated to commence 
-within the next month.
+### System Requirements
 
-## Exhibition Plans
+- [Git](https://git-scm.com/downloads) (optional, but recommended)
+- [Python 3.8+](https://www.python.org/downloads/)
+- [Pipenv](https://pipenv.pypa.io/en/latest/installation.html) (for managing Python dependencies within a virtual environment)
+- [OpenSCAD](https://openscad.org/downloads.html) (required for generating 3D models)
 
-*Hypercube: A Really Dope Zoetrope* is anticipated to debut at the **2027 Joint Mathematics Meeting (JMM)** in Chicago, 
-scheduled for early January. Following its debut, the installation will be in the market for a more permanent home.
+### Local Installation
 
-## Get Involved
+1. Clone this repository:
+   - If using Git, open the terminal `cd` into the directory where you'd like to save the repo, and then run: 
+   ```bash
+   git clone https://github.com/kristen/hypercube.git
+   cd hypercube
+   ```
+   - Otherwise, download the project's source code and then unzip it in a local directory.
+2. Install Python dependencies using Pipenv (which references the included `Pipfile`): 
+   ```bash
+   pipenv install
+   ```
+3. Activate the virtual environment:
+   ```bash
+   pipenv shell
+   ```
+### Sample Usage
 
-If you'd like to learn more, contribute, or discuss the project, please 
-contact the project lead, Kristen Beck, at `kristenvonbecker@gmail.com`. More details, including project updates 
-and technical insights, will be available on the project website at 
-[https://kristenvonbecker.github.io/hypercube](https://kristenvonbecker.github.io/hypercube).
+Under construction...
 
-## About & Acknowledgements
+## Contributions
+
+While this project is being developed in the open for transparency and open access, it is currently managed by a small team 
+working towards the specific goal. Because of this specific focus, we are not actively seeking pull requests at this time.
+
+We still encourage you to fork the repository for your own experiments. If you have questions, ideas, or discover a bug, 
+please feel free to open an issue for discussion. We appreciate all feedback and interest in the project.
+
+## Acknowledgements
 
 This project is partially supported by the **Pathways to STEM Success** research program at San Diego Miramar College, 
 which is funded by a grant from the National Science Foundation (NSF).
 
-We gratefully acknowledge the support from the **National Science Foundation (NSF)** for this research. We also extend 
-our thanks to the **San Diego Fine Woodworkers Association** for providing facility usage and support during the 
-woodworking fabrication phases.
+## License
+
+This project is licenced under the terms of the GPL-3.0 License. See the [`LICENSE`](LICENSE) file for details.
