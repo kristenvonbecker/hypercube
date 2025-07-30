@@ -47,7 +47,7 @@ a {
 }
 
 .site-title {
-  font-size: 1.25rem;
+  font-size: 1.75rem;
   font-weight: bold;
   text-decoration: none;
   color: #333;
@@ -96,29 +96,15 @@ a {
   margin-top: 10px; /* Adds some space between the image and the caption */
 }
 
-.rss-subscribe-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  background-color: #f7f7f7;
+.subscribe-button {
+  display: inline-block;
+  background-color: #333;
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 5px;
   text-decoration: none;
   font-weight: bold;
-  color: #333;
-  float: right;
-  margin-left: 1rem;
-  margin-bottom: 1rem;
-}
-
-.rss-subscribe-link:hover {
-  background-color: #eee;
-}
-
-.rss-subscribe-link svg {
-  width: 1rem;
-  height: 1rem;
-  stroke: #f26522; /* Classic RSS Orange */
+  margin-bottom: 20px;
 }
 
 /* Custom Table Styles */
@@ -137,4 +123,41 @@ th, td {
 th {
   background-color: #f2f2f2; /* Add a light gray background to headers */
   font-weight: bold;
+}
+
+/* --- Mobile Responsiveness --- */
+
+/* This media query targets screens 650px or smaller, like most phones. */
+@media screen and (max-width: 650px) {
+
+  /* Change the header to a vertical, centered layout. */
+  .site-header {
+    flex-direction: column; /* Stack header items vertically */
+    align-items: center;    /* Center the items horizontally */
+    gap: 1rem;              /* Add space between the title and nav */
+  }
+
+  /* Center the site title text */
+  .site-title {
+    text-align: center;
+  }
+
+  /* Force the tagline to a new line */
+  .title-tagline {
+    display: block; /* Make the span a block-level element */
+    margin-top: 0.25rem;
+  }
+
+  /* Arrange nav links vertically and center them */
+  .site-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Remove side margin from nav links and add vertical spacing */
+  .site-nav a {
+    margin-left: 0;
+    margin-bottom: 0.5rem;
+  }
 }

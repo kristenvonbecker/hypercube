@@ -1,5 +1,7 @@
 <header class="site-header">
-  <a class="site-title" href="{{ "/" | relative_url }}">Hypercube: A Really Dope Zoetrope</a>
+  <a class="site-title" href="{{ "/" | relative_url }}">
+    Hypercube: <span class="title-tagline">A Really Dope Zoetrope</span>
+  </a>
   <nav class="site-nav">
       {% for item in site.data.navigation %}
         {% if item.link contains "http" %}
