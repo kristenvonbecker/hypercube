@@ -6,8 +6,6 @@ permalink: /blog/
 
 # The Hyperblog
 
-<a href="{{ "/feed.xml" | relative_url }}" class="subscribe-button">Subscribe via RSS</a>
-
 <ul>
   {% for post in site.posts %}
     <li>

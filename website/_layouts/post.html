@@ -37,6 +37,7 @@
         border-radius: 5px;
       }
     </style>
+
 </head>
 <body>
   {% include header.html %}
@@ -61,9 +62,19 @@
           <img src="{{ image_src | relative_url }}" alt="{{ page.title }} featured image" class="featured-image">
         {% endif %}
 
-        <div class="post-content">
+        <div class="post-content" style="margin-bottom: 100px">
           {{ content }}
         </div>
+        <!-- MailerLite Universal -->
+        <script>
+            (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[])
+            .push(arguments);},l=d.createElement(e),l.async=1,l.src=u,
+            n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})
+            (window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+            ml('account', '1027352');
+        </script>
+        <!-- End MailerLite Universal -->
+        <div class="ml-embedded" data-form="8B7iOE"></div>
 
       </article>
     </div>
