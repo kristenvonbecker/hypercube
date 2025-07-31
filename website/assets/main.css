@@ -96,17 +96,6 @@ a {
   margin-top: 10px; /* Adds some space between the image and the caption */
 }
 
-.subscribe-button {
-  display: inline-block;
-  background-color: #333;
-  color: #fff;
-  padding: 10px 15px;
-  border-radius: 5px;
-  text-decoration: none;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
 /* Custom Table Styles */
 table {
   /*width: 100%; !* Make table span full width of its container *!*/
@@ -127,37 +116,99 @@ th {
 
 /* --- Mobile Responsiveness --- */
 
+/* Styles for the subscription box container */
+.subscribe-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px;
+  margin-top: 50px;
+  margin-bottom: 30px;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+/* This tells the text container to be flexible and shrink if needed */
+.subscribe-text {
+  flex: 1 1 0;      /* Allows the element to grow and shrink */
+  min-width: 0;     /* Prevents the container from overflowing its parent */
+}
+
+/* Styles for the text content on the left */
+.subscribe-text h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.25rem;
+}
+
+.subscribe-text p {
+  margin-bottom: 0;
+  color: #585858;
+}
+
+/* Styles for the subscribe button on the right */
+.subscribe-button {
+  display: inline-block;
+  background-color: #212121; /* CHANGED: Updated to black */
+  color: #ffffff !important;   /* CHANGED: White text */
+  border: 1px solid #212121;   /* ADDED: Border for hover effect */
+  padding: 12px 24px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  white-space: nowrap;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  margin-left: 20px;
+}
+
+.subscribe-button:hover {
+  background-color: #ffffff; /* CHANGED: White background on hover */
+  color: #212121 !important;   /* CHANGED: Black text on hover */
+  text-decoration: none;
+}
+
+/*
+ Start of responsive styles
+ ========================================================================== */
+
 /* This media query targets screens 650px or smaller, like most phones. */
 @media screen and (max-width: 650px) {
 
-  /* Change the header to a vertical, centered layout. */
+  /* Your existing responsive styles for the header */
   .site-header {
-    flex-direction: column; /* Stack header items vertically */
-    align-items: center;    /* Center the items horizontally */
-    gap: 1rem;              /* Add space between the title and nav */
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
   }
-
-  /* Center the site title text */
   .site-title {
     text-align: center;
   }
-
-  /* Force the tagline to a new line */
   .title-tagline {
-    display: block; /* Make the span a block-level element */
+    display: block;
     margin-top: 0.25rem;
   }
-
-  /* Arrange nav links vertically and center them */
   .site-nav {
     display: flex;
     flex-direction: column;
     align-items: center;
   }
-
-  /* Remove side margin from nav links and add vertical spacing */
   .site-nav a {
     margin-left: 0;
     margin-bottom: 0.5rem;
+  }
+
+  /* ADDED: Responsive styles for the subscribe box */
+  .subscribe-box {
+    flex-direction: column;   /* Stack the text and button vertically */
+    align-items: flex-start;  /* Align items to the left */
+  }
+
+  .subscribe-button {
+    margin-top: 20px;       /* Add space above the button */
+    margin-left: 0;         /* Remove the left margin */
+    width: 100%;            /* Make the button full-width */
+    text-align: center;     /* Center the text inside the button */
+    box-sizing: border-box;
   }
 }
