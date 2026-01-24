@@ -27,12 +27,13 @@ The repository is organized to separate the core logic from generative scripts, 
 ```bash
 .
 ├── src/                # Core Python source code
-│   └── hypercube/      # Main package for the project
+│   └── hypercube_factory/      # Main package for the project
 │       ├── geometry/   # Defines the Hypercube class (structure.py)
 │       ├── exporters/  # Scripts for exporting data (e.g., to SCAD)
 │       └── ...
 ├── scripts/            # Standalone Python scripts for generating assets
 │   └── generators/     # e.g., generate_scad.py to create 3D models
+├── demos/              # Example/demo scripts (non-test)
 ├── notebooks/          # Jupyter notebooks for experimentation and visualization
 ├── output/             # Default location for generated files (e.g., .scad, .stl)
 ├── tests/              # Unit and integration tests for the Python code

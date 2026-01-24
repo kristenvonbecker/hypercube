@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import math
 
-from src.hypercube.geometry.structure import Hypercube
+from src.hypercube_factory.geometry.structure import Hypercube
 
 # --- Test Data ---
 
