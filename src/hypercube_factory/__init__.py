@@ -1,0 +1,1 @@
+"""Core hypercube factory package."""

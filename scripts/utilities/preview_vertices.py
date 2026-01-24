@@ -1,3 +1,5 @@
+"""Preview 3D hypercube vertices and edges with Plotly."""
+
 import numpy as np
 import plotly.graph_objects as go
 
@@ -18,25 +20,25 @@ def plot_hypercube_3d(vertices_dict, edges_list, title="Hypercube Projection"):
         print("No vertices to plot.")
         return
 
-    # Assuming coordinates are 3D after projection or for a 3D hypercube
-    # If a vertex has fewer than 3 dimensions, pad with zeros for plotting
+    # Assuming coordinates are 3D after projection or for a 3D hypercube.
+    # If a vertex has fewer than 3 dimensions, pad with zeros for plotting.
     def get_padded_coords(vertex):
         coords = vertex.coordinates
         if len(coords) >= 3:
             return coords[0], coords[1], coords[2]
         elif len(coords) == 2:
-            return coords[0], coords[1], 0.0 # Pad Z with zero for 2D projection
+            return coords[0], coords[1], 0.0  # Pad Z with zero for 2D projection.
         elif len(coords) == 1:
-            return coords[0], 0.0, 0.0 # Pad Y, Z with zeros for 1D projection
-        else: # 0D point
+            return coords[0], 0.0, 0.0  # Pad Y, Z with zeros for 1D projection.
+        else:  # 0D point.
             return 0.0, 0.0, 0.0
 
-    # Extract coordinates for Plotly
+    # Extract coordinates for Plotly.
     x_coords = [get_padded_coords(v)[0] for v in vertices_dict.values()]
     y_coords = [get_padded_coords(v)[1] for v in vertices_dict.values()]
     z_coords = [get_padded_coords(v)[2] for v in vertices_dict.values()]
 
-    # Prepare edge data for Plotly lines
+    # Prepare edge data for Plotly lines.
     edge_x = []
     edge_y = []
     edge_z = []
@@ -49,7 +51,7 @@ def plot_hypercube_3d(vertices_dict, edges_list, title="Hypercube Projection"):
             edge_y.extend([v1_y, v2_y, None])
             edge_z.extend([v1_z, v2_z, None])
 
-    # Create Plotly traces
+    # Create Plotly traces.
     trace_edges = go.Scatter3d(
         x=edge_x, y=edge_y, z=edge_z,
         mode='lines',
@@ -62,21 +64,21 @@ def plot_hypercube_3d(vertices_dict, edges_list, title="Hypercube Projection"):
         mode='markers',
         marker=dict(size=5, color='red', symbol='circle'),
         name='Vertices',
-        text=[f"V{idx}" for idx in vertices_dict.keys()], # Show vertex index on hover
+        text=[f"V{idx}" for idx in vertices_dict.keys()],  # Show vertex index on hover.
         hoverinfo='text'
     )
 
-    # Create the figure and add traces
+    # Create the figure and add traces.
     fig = go.Figure(data=[trace_edges, trace_vertices])
 
-    # Update layout for better visualization
+    # Update layout for better visualization.
     fig.update_layout(
         title=title,
         scene=dict(
-            xaxis=dict(title='X', autorange="reversed"), # Reverse X for typical math visualization
+            xaxis=dict(title='X', autorange="reversed"),  # Reverse X for typical math visualization.
             yaxis=dict(title='Y'),
             zaxis=dict(title='Z'),
-            aspectmode='cube' # Ensures equal scaling on all axes
+            aspectmode='cube'  # Ensures equal scaling on all axes.
         ),
         margin=dict(l=0, r=0, b=0, t=40)
     )
