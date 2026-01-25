@@ -15,6 +15,7 @@ from src.hypercube_factory.scad.scad import (
 
 
 def test_save_to_scad_writes_header_and_body(tmp_path):
+    # Basic smoke test for SCAD header + primitive output.
     scad_obj = sphere(r=1)
     output_path = tmp_path / "simple.scad"
 
@@ -26,6 +27,7 @@ def test_save_to_scad_writes_header_and_body(tmp_path):
 
 
 def test_generate_projection_scad_object_contains_primitives():
+    # Projection should include both vertex spheres and edge cylinders.
     hypercube = Hypercube(4)
     scad_obj = _generate_projection_scad_object(
         hypercube, target_dim=3, projection_radius=0.1, projection_type="orthogonal"
@@ -37,6 +39,7 @@ def test_generate_projection_scad_object_contains_primitives():
 
 
 def test_generate_cross_section_scad_object_with_faces():
+    # Cross-section with faces should emit a polyhedron.
     hypercube = Hypercube(3)
     scad_obj = _generate_cross_section_scad_object(
         hypercube, slice_dimension=2, slice_value=0.5
@@ -51,8 +54,10 @@ def test_generate_cross_section_scad_object_without_faces():
         dimension = 3
 
         def cross_section(self, slice_dimension, slice_value):
+            # Return only points to force the "no faces" path.
             return np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]), None
 
+    # When no faces are returned, we fall back to spheres.
     scad_obj = _generate_cross_section_scad_object(
         DummyHypercube(), slice_dimension=2, slice_value=0.0
     )
@@ -62,6 +67,7 @@ def test_generate_cross_section_scad_object_without_faces():
 
 
 def test_create_cylinder_between_points_zero_length_returns_sphere():
+    # Degenerate edge should become a sphere (no length to form a cylinder).
     scad_obj = _create_cylinder_between_points([0, 0, 0], [0, 0, 0], radius=0.2)
 
     scad_text = scad_obj.as_scad()
@@ -69,6 +75,7 @@ def test_create_cylinder_between_points_zero_length_returns_sphere():
 
 
 def test_create_cylinder_between_points_nonzero_returns_cylinder():
+    # Non-degenerate edge should become a cylinder.
     scad_obj = _create_cylinder_between_points([0, 0, 0], [0, 0, 1], radius=0.2)
 
     scad_text = scad_obj.as_scad()
@@ -76,6 +83,7 @@ def test_create_cylinder_between_points_nonzero_returns_cylinder():
 
 
 def test_scad_exporter_writes_projection_and_cross_section(tmp_path):
+    # End-to-end export should write both files with header.
     hypercube = Hypercube(4)
     exporter = ScadExporter(hypercube)
 

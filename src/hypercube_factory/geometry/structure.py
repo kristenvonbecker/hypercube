@@ -2,6 +2,7 @@
 
 import numpy as np
 import itertools
+from dataclasses import dataclass, field
 from itertools import combinations
 from scipy.spatial import ConvexHull
 
@@ -393,3 +394,255 @@ class Hypercube:
             for face_obj in self.k_faces[2]:
                 face_sets.append(face_obj.vertices_indices)
         return face_sets
+
+
+# --- Hypercube Net Structures ---
+@dataclass
+class Hinge:
+    """
+    Describes a hinge between two k-faces along their shared (k-1)-face.
+    axis_basis: Orthonormal basis spanning the hinge subspace in ambient N-D.
+    plane_basis: Two orthonormal vectors spanning the fold plane (orthogonal to axis_basis).
+    """
+
+    shared_vertices_indices: frozenset
+    axis_basis: np.ndarray
+    plane_basis: np.ndarray
+    pivot: np.ndarray
+
+
+@dataclass
+class NetFace:
+    """
+    Represents a k-face in a hypercube net.
+    vertex_positions are local copies of the hypercube's current vertex coordinates.
+    """
+
+    face_id: int
+    dimension: int
+    vertices_indices: frozenset
+    vertex_positions: dict
+    parent_id: int | None = None
+    children_ids: list = field(default_factory=list)
+    hinge_to_parent: Hinge | None = None
+    fold_angle: float = 0.0
+
+
+class HypercubeNet:
+    """
+    Represents a hypercube net as a tree of k-faces connected by hinges.
+    Provides fold/unfold operations by rotating a face subtree around its hinge.
+    """
+
+    def __init__(self, hypercube, face_dimension, root_face_id=0):
+        if not isinstance(hypercube, Hypercube):
+            raise TypeError("hypercube must be an instance of Hypercube.")
+        if not (0 <= face_dimension <= hypercube.dimension):
+            raise ValueError("face_dimension must be within [0, hypercube.dimension].")
+
+        self.hypercube_dim = hypercube.dimension
+        self.face_dim = face_dimension
+        self.faces = {}
+        self.root_face_id = root_face_id
+
+        self._build_from_hypercube(hypercube)
+
+    def _build_from_hypercube(self, hypercube):
+        k_faces = list(hypercube.get_k_faces(self.face_dim))
+        if not k_faces:
+            raise ValueError(f"No faces of dimension {self.face_dim} exist for this hypercube.")
+
+        # Map each k-face to an id using its vertex indices as a stable key.
+        face_key_to_id = {}
+        for face_id, face in enumerate(k_faces):
+            face_key_to_id[frozenset(face.vertices_indices)] = face_id
+
+        # Snapshot vertex positions from the hypercube at build time.
+        current_coords = hypercube.get_vertex_coordinates()
+
+        for face_id, face in enumerate(k_faces):
+            vertex_positions = {
+                idx: current_coords[idx].copy()
+                for idx in face.vertices_indices
+            }
+            self.faces[face_id] = NetFace(
+                face_id=face_id,
+                dimension=self.face_dim,
+                vertices_indices=frozenset(face.vertices_indices),
+                vertex_positions=vertex_positions,
+            )
+
+        # Build adjacency based on shared (k-1)-faces.
+        adjacency = {face_id: [] for face_id in self.faces}
+        if self.face_dim == 0:
+            self.root_face_id = 0
+            return
+
+        # Two k-faces are adjacent if they share exactly 2^(k-1) vertices.
+        required_shared_vertices = 2 ** (self.face_dim - 1)
+        face_ids = list(self.faces.keys())
+        for i in range(len(face_ids)):
+            for j in range(i + 1, len(face_ids)):
+                f_id = face_ids[i]
+                g_id = face_ids[j]
+                shared = self.faces[f_id].vertices_indices & self.faces[g_id].vertices_indices
+                if len(shared) == required_shared_vertices:
+                    adjacency[f_id].append(g_id)
+                    adjacency[g_id].append(f_id)
+
+        # Build a spanning tree (BFS) rooted at root_face_id.
+        if self.root_face_id not in self.faces:
+            self.root_face_id = 0
+
+        visited = set()
+        queue = [self.root_face_id]
+        visited.add(self.root_face_id)
+
+        while queue:
+            parent_id = queue.pop(0)
+            for child_id in adjacency[parent_id]:
+                if child_id in visited:
+                    continue
+                visited.add(child_id)
+                queue.append(child_id)
+                self.faces[child_id].parent_id = parent_id
+                self.faces[parent_id].children_ids.append(child_id)
+
+                # Build the hinge from the shared (k-1)-face.
+                hinge = self._build_hinge(self.faces[parent_id], self.faces[child_id])
+                self.faces[child_id].hinge_to_parent = hinge
+
+    def _build_hinge(self, parent_face, child_face):
+        shared = parent_face.vertices_indices & child_face.vertices_indices
+        if not shared:
+            raise ValueError("Faces are not adjacent; cannot build hinge.")
+
+        # Hinge axis basis comes from the shared (k-1)-face.
+        shared_coords = np.array(
+            [parent_face.vertex_positions[idx] for idx in shared]
+        )
+        axis_basis = self._compute_basis(shared_coords, self.face_dim - 1)
+
+        # Compute full k-face bases to find the two fold-plane directions.
+        parent_coords = np.array(
+            [parent_face.vertex_positions[idx] for idx in parent_face.vertices_indices]
+        )
+        child_coords = np.array(
+            [child_face.vertex_positions[idx] for idx in child_face.vertices_indices]
+        )
+        parent_basis = self._compute_basis(parent_coords, self.face_dim)
+        child_basis = self._compute_basis(child_coords, self.face_dim)
+
+        # Pick one vector orthogonal to the hinge from each face.
+        u = self._vector_orthogonal_to_basis(parent_basis, axis_basis)
+        v = self._vector_orthogonal_to_basis(child_basis, axis_basis)
+        # Orthogonalize to get a stable fold plane basis.
+        w = self._make_orthonormal_to(u, v, axis_basis)
+
+        # Any point on the hinge works as the pivot; centroid is stable.
+        pivot = shared_coords.mean(axis=0)
+        plane_basis = np.vstack([u, w])
+
+        return Hinge(
+            shared_vertices_indices=frozenset(shared),
+            axis_basis=axis_basis,
+            plane_basis=plane_basis,
+            pivot=pivot,
+        )
+
+    def _compute_basis(self, coords, target_dim):
+        """
+        Computes an orthonormal basis for the subspace spanned by coords.
+        Uses SVD for stability. Returns shape (target_dim, N).
+        """
+        if target_dim == 0:
+            return np.zeros((0, self.hypercube_dim))
+        centered = coords - coords.mean(axis=0)
+        _, _, vt = np.linalg.svd(centered, full_matrices=False)
+        basis = vt[:target_dim]
+        return basis
+
+    def _vector_orthogonal_to_basis(self, candidate_basis, axis_basis):
+        """
+        Finds a unit vector in candidate_basis that is orthogonal to axis_basis.
+        """
+        for vec in candidate_basis:
+            v = vec.copy()
+            for axis_vec in axis_basis:
+                v -= np.dot(v, axis_vec) * axis_vec
+            norm = np.linalg.norm(v)
+            if norm > 1e-10:
+                return v / norm
+        raise ValueError("Could not find a vector orthogonal to the hinge axis.")
+
+    def _make_orthonormal_to(self, u, v, axis_basis):
+        """
+        Makes a unit vector orthogonal to u and axis_basis, using v as a guide.
+        """
+        w = v - np.dot(v, u) * u
+        for axis_vec in axis_basis:
+            w -= np.dot(w, axis_vec) * axis_vec
+        norm = np.linalg.norm(w)
+        if norm > 1e-10:
+            return w / norm
+
+        # Fallback: pick any vector orthogonal to axis_basis and u.
+        ortho_basis = np.vstack([axis_basis, u])
+        _, _, vt = np.linalg.svd(ortho_basis, full_matrices=True)
+        for candidate in vt:
+            if np.allclose(ortho_basis @ candidate, 0, atol=1e-8):
+                return candidate / np.linalg.norm(candidate)
+        raise ValueError("Could not construct an orthonormal fold-plane vector.")
+
+    def _rotation_in_plane(self, e1, e2, angle):
+        """
+        Builds an N-D rotation matrix that rotates in the plane spanned by e1 and e2.
+        """
+        n = self.hypercube_dim
+        r = np.identity(n)
+        e1 = e1.reshape(n, 1)
+        e2 = e2.reshape(n, 1)
+        sin_theta = np.sin(angle)
+        cos_theta = np.cos(angle)
+
+        r += sin_theta * (e2 @ e1.T - e1 @ e2.T)
+        r += (cos_theta - 1.0) * (e1 @ e1.T + e2 @ e2.T)
+        return r
+
+    def rotate_subtree(self, face_id, angle):
+        """
+        Rotates a face and its descendants by angle (radians) around its hinge.
+        """
+        face = self.faces.get(face_id)
+        if face is None:
+            raise ValueError(f"Unknown face_id: {face_id}")
+        if face.parent_id is None or face.hinge_to_parent is None:
+            raise ValueError("Root face cannot be rotated (no hinge to parent).")
+
+        hinge = face.hinge_to_parent
+        e1, e2 = hinge.plane_basis
+        rotation = self._rotation_in_plane(e1, e2, angle)
+        pivot = hinge.pivot
+
+        for sub_id in self._iter_subtree(face_id):
+            self._apply_rotation_to_face(self.faces[sub_id], rotation, pivot)
+
+        face.fold_angle += angle
+
+    def _apply_rotation_to_face(self, face, rotation, pivot):
+        # Rotate each stored vertex coordinate about the hinge pivot.
+        for idx, coord in face.vertex_positions.items():
+            face.vertex_positions[idx] = pivot + rotation @ (coord - pivot)
+
+    def _iter_subtree(self, face_id):
+        stack = [face_id]
+        while stack:
+            current_id = stack.pop()
+            yield current_id
+            stack.extend(self.faces[current_id].children_ids)
+
+    def get_face_vertices(self, face_id):
+        face = self.faces.get(face_id)
+        if face is None:
+            raise ValueError(f"Unknown face_id: {face_id}")
+        return np.array([face.vertex_positions[idx] for idx in face.vertices_indices])

@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import math
 
-from src.hypercube_factory.geometry.structure import Hypercube
+from src.hypercube_factory.geometry.structure import Hypercube, HypercubeNet
 
 # --- Test Data ---
 
@@ -182,3 +182,67 @@ def test_cross_section(dim, capsys):
         captured = capsys.readouterr()
         assert "No intersection points found" in captured.out
         assert verts_outside is None and faces_outside is None
+
+
+def _pairwise_distances(points):
+    distances = []
+    for i in range(len(points)):
+        for j in range(i + 1, len(points)):
+            distances.append(np.linalg.norm(points[i] - points[j]))
+    return np.array(distances)
+
+
+def test_hypercube_net_rotation_invariants():
+    """
+    Tests numerical invariants for HypercubeNet rotations on a tesseract (4D) net.
+    """
+    h = Hypercube(4)
+    net = HypercubeNet(h, face_dimension=3, root_face_id=0)
+
+    # Pick any non-root face that has a parent (a hinge exists).
+    child_faces = [f for f in net.faces.values() if f.parent_id is not None]
+    assert child_faces, "Expected at least one child face in the net."
+    child_face = child_faces[0]
+
+    # Capture initial state.
+    root_face = net.faces[net.root_face_id]
+    root_initial = {
+        idx: root_face.vertex_positions[idx].copy()
+        for idx in root_face.vertices_indices
+    }
+    child_initial = {
+        idx: child_face.vertex_positions[idx].copy()
+        for idx in child_face.vertices_indices
+    }
+    hinge_vertices = list(child_face.hinge_to_parent.shared_vertices_indices)
+    hinge_initial = {
+        idx: child_face.vertex_positions[idx].copy()
+        for idx in hinge_vertices
+    }
+
+    child_distances_initial = _pairwise_distances(
+        np.array([child_face.vertex_positions[idx] for idx in child_face.vertices_indices])
+    )
+
+    # Rotate and check invariants.
+    angle = np.pi / 4
+    net.rotate_subtree(child_face.face_id, angle)
+
+    # Root face remains fixed.
+    for idx in root_face.vertices_indices:
+        assert np.allclose(root_face.vertex_positions[idx], root_initial[idx])
+
+    # Shared hinge vertices remain fixed.
+    for idx in hinge_vertices:
+        assert np.allclose(child_face.vertex_positions[idx], hinge_initial[idx])
+
+    # Pairwise distances in child face are preserved.
+    child_distances_rotated = _pairwise_distances(
+        np.array([child_face.vertex_positions[idx] for idx in child_face.vertices_indices])
+    )
+    assert np.allclose(child_distances_initial, child_distances_rotated, atol=1e-6)
+
+    # Inverse rotation returns the child face to its original positions.
+    net.rotate_subtree(child_face.face_id, -angle)
+    for idx in child_face.vertices_indices:
+        assert np.allclose(child_face.vertex_positions[idx], child_initial[idx], atol=1e-6)
