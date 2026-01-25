@@ -1,4 +1,4 @@
-"""Geometry primitives and transformations for hypercubes."""
+"""Geometry primitives and transformations."""
 
 import numpy as np
 import itertools
@@ -168,6 +168,8 @@ class Hypercube:
             raise ValueError(f"Plane indices must be a pair of integers within [0, {self.dimension - 1}].")
 
         i, j = plane_indices
+        if i == j:
+            raise ValueError("Plane indices must refer to two distinct dimensions.")
         cos_theta = np.cos(angle)
         sin_theta = np.sin(angle)
 
@@ -219,17 +221,12 @@ class Hypercube:
             # (x_0, ..., x_{N-2}, x_{N-1}) -> (x_0_p, ..., x_{N-2}_p)
             # where x_i_p = x_i * view_distance / (view_distance - x_{N-1}).
 
-            # This handles projection from self.dimension to self.dimension - 1.
-            # If target_dimension < self.dimension - 1, it first projects to self.dimension - 1.
-            # It then truncates the result.
-            # A more general N-D to M-D perspective projection requires a custom projection matrix that would be passed in.
-
             for idx, vertex_obj in self.vertices_map.items():
                 original_coords = vertex_obj.coordinates.copy()
                 projected_coords = np.zeros(target_dimension)
 
                 # Determine the 'depth' coordinate for perspective effect.
-                # We'll use the last dimension of the original hypercube for perspective division.
+                # Use the last dimension of the original hypercube for perspective division.
                 if self.dimension > 0:  # Ensure there's a last coordinate to use.
                     depth_coord = original_coords[self.dimension - 1]
                 else:  # For 0D hypercube (a point), no perspective applies.
@@ -239,8 +236,7 @@ class Hypercube:
 
                 if divisor == 0:
                     # Handle division by zero (points on the projection plane).
-                    # For visualization, it's often better to clip these or place them far away.
-                    # Here, we use a tiny non-zero value to prevent errors.
+                    # (Clip these or place them far away.)
                     divisor = 1e-9  # A very small epsilon to avoid division by zero.
 
                 # Apply perspective effect to the first `target_dimension` coordinates.
@@ -249,7 +245,6 @@ class Hypercube:
                     if i < self.dimension:
                         projected_coords[i] = original_coords[i] * view_distance / divisor
                     else:
-                        # If target_dimension is higher than available original dimensions (should not happen given checks, but for safety).
                         projected_coords[i] = 0.0
 
                 projected_vertices[idx] = Vertex(projected_coords, initial_index=idx)
@@ -261,7 +256,7 @@ class Hypercube:
     def cross_section(self, hyperplane_dim=None, hyperplane_value=0.0):
         """
         Calculates the cross-section of the hypercube with a given hyperplane.
-        Assumes the hyperplane is defined by one dimension fixed at a certain value.
+        Assumes the hyperplane is defined by holding one dimension fixed at a certain value.
         For example, hyperplane_dim=3, hyperplane_value=0.0 for w=0 in a 4D hypercube.
 
         Args:

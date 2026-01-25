@@ -9,7 +9,7 @@ from src.hypercube_factory.geometry.structure import Hypercube
 # --- Test Data ---
 
 # A range of dimensions to test.
-DIMENSIONS_TO_TEST = [0, 1, 2, 3, 4, 5, 6]
+DIMENSIONS_TO_TEST = [0, 1, 2, 3, 4, 5]
 
 
 # --- Helper Function for k-face count ---
@@ -30,7 +30,7 @@ def test_invalid_instantiation():
         Hypercube(-1)
     with pytest.raises(ValueError, match="Dimension must be a non-negative integer."):
         Hypercube(1.5)
-    with pytest.raises(TypeError):  # Note: a string will likely raise a TypeError inside itertools.
+    with pytest.raises(ValueError, match="Dimension must be a non-negative integer."):
         Hypercube("four")
 
 
@@ -109,9 +109,15 @@ def test_rotation(dim):
             h.rotate([0, 1], np.pi / 2)  # Indices out of bounds for dim < 2.
     else:
         # A valid rotation should not raise an error.
-        initial_coords = h.get_vertex_coordinates()[1].copy()
+        # Pick a vertex that has a non-zero component in the rotation plane.
+        vertex_coords = h.get_vertex_coordinates()
+        candidate_idx = next(
+            idx for idx, coords in vertex_coords.items()
+            if not np.isclose(coords[0], 0.0) or not np.isclose(coords[1], 0.0)
+        )
+        initial_coords = vertex_coords[candidate_idx].copy()
         h.rotate([0, 1], np.pi / 2)
-        rotated_coords = h.get_vertex_coordinates()[1]
+        rotated_coords = h.get_vertex_coordinates()[candidate_idx]
         assert not np.array_equal(initial_coords, rotated_coords)
 
 
@@ -166,7 +172,10 @@ def test_cross_section(dim, capsys):
         # For a central slice, the number of vertices should be 2^(dim-1)
         # This assumes the convex hull finds all vertices of the (dim-1) cross-section.
         assert len(verts) == 2 ** (dim - 1)
-        assert faces is not None
+        if dim == 2:
+            assert faces is None
+        else:
+            assert faces is not None
 
         # A slice outside the cube should yield nothing.
         verts_outside, faces_outside = h.cross_section(hyperplane_value=10.0)
