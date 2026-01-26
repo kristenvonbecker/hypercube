@@ -81,3 +81,7 @@ htmlcov/
 # Miscellaneous
 # Some editors create this for local history
 .history/
+
+# Generated demo artifacts
+output/*.html
+output/**/*.html
