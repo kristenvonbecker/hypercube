@@ -646,3 +646,502 @@ class HypercubeNet:
         if face is None:
             raise ValueError(f"Unknown face_id: {face_id}")
         return np.array([face.vertex_positions[idx] for idx in face.vertices_indices])
+
+
+class TesseractNet3D:
+    """
+    Builds 3D tesseract nets as polycubes (all vertices lie in 3D; w=0 implicitly).
+    Net styles define distinct layouts of the 8 cube cells.
+    """
+
+    def __init__(self, net_style="standard", cube_size=1.0):
+        if cube_size <= 0:
+            raise ValueError("cube_size must be positive.")
+        self.net_style = net_style
+        self.cube_size = float(cube_size)
+        self.faces = {}
+        self.root_face_id = 0
+        self._build()
+
+    def _cube_vertices(self, origin):
+        x0, y0, z0 = origin
+        s = self.cube_size
+        return np.array([
+            [x0, y0, z0],
+            [x0 + s, y0, z0],
+            [x0, y0 + s, z0],
+            [x0 + s, y0 + s, z0],
+            [x0, y0, z0 + s],
+            [x0 + s, y0, z0 + s],
+            [x0, y0 + s, z0 + s],
+            [x0 + s, y0 + s, z0 + s],
+        ], dtype=float)
+
+    def _net_origins(self):
+        s = self.cube_size
+        if self.net_style == "standard":
+            # Central cube with 6 neighbors, plus one extra on +Z.
+            return [
+                (0, 0, 0),          # center
+                (s, 0, 0),          # +X
+                (-s, 0, 0),         # -X
+                (0, s, 0),          # +Y
+                (0, -s, 0),         # -Y
+                (0, 0, s),          # +Z
+                (0, 0, -s),         # -Z
+                (0, 0, 2 * s),      # extra on +Z
+            ]
+        if self.net_style == "zigzag":
+            # A more believable layout: 5-cube chain with two side cubes.
+            # This stays tree-like and looks closer to common tesseract nets.
+            return [
+                (0, 0, 0),          # root
+                (s, 0, 0),          # chain 1
+                (2 * s, 0, 0),      # chain 2
+                (3 * s, 0, 0),      # chain 3
+                (4 * s, 0, 0),      # chain 4
+                (2 * s, s, 0),      # side off chain
+                (2 * s, -s, 0),     # side off chain
+                (1 * s, 0, s),      # out-of-plane leaf
+            ]
+        raise ValueError(f"Unknown net_style: {self.net_style}. Use 'standard' or 'zigzag'.")
+
+    def _build(self):
+        origins = self._net_origins()
+        for face_id, origin in enumerate(origins):
+            vertices = self._cube_vertices(origin)
+            vertex_positions = {idx: vertices[idx] for idx in range(vertices.shape[0])}
+            self.faces[face_id] = NetFace(
+                face_id=face_id,
+                dimension=3,
+                vertices_indices=frozenset(vertex_positions.keys()),
+                vertex_positions=vertex_positions,
+            )
+
+        # Build adjacency based on shared faces (origins differ by one cube along one axis).
+        adjacency = {face_id: [] for face_id in self.faces}
+        s = self.cube_size
+        origins_arr = np.array(origins, dtype=float)
+        for i in range(len(origins)):
+            for j in range(i + 1, len(origins)):
+                delta = origins_arr[j] - origins_arr[i]
+                matches = np.isclose(np.abs(delta), s) | np.isclose(delta, 0.0)
+                if np.all(matches) and np.isclose(np.sum(np.isclose(np.abs(delta), s)), 1):
+                    adjacency[i].append(j)
+                    adjacency[j].append(i)
+
+        # Build a spanning tree for future folding logic.
+        visited = set()
+        queue = [self.root_face_id]
+        visited.add(self.root_face_id)
+        while queue:
+            parent_id = queue.pop(0)
+            for child_id in adjacency[parent_id]:
+                if child_id in visited:
+                    continue
+                visited.add(child_id)
+                queue.append(child_id)
+                self.faces[child_id].parent_id = parent_id
+                self.faces[parent_id].children_ids.append(child_id)
+
+
+# --- Hypercube Net Enumeration (Facet Nets) ---
+@dataclass
+class UnfoldedNet:
+    """
+    Stores an unfolded net as an (n-1)-dimensional object.
+    face_vertices: dict[face_id] -> np.ndarray of shape (2^(n-1), n-1)
+    """
+
+    dimension: int
+    face_vertices: dict
+    tree_edges: list
+    root_face_id: int = 0
+
+
+class _DisjointSet:
+    def __init__(self, n):
+        self.parent = list(range(n))
+        self.rank = [0] * n
+        self.count = n
+
+    def find(self, x):
+        while self.parent[x] != x:
+            self.parent[x] = self.parent[self.parent[x]]
+            x = self.parent[x]
+        return x
+
+    def union(self, a, b):
+        ra, rb = self.find(a), self.find(b)
+        if ra == rb:
+            return False
+        if self.rank[ra] < self.rank[rb]:
+            ra, rb = rb, ra
+        self.parent[rb] = ra
+        if self.rank[ra] == self.rank[rb]:
+            self.rank[ra] += 1
+        self.count -= 1
+        return True
+
+    def copy(self):
+        clone = _DisjointSet(0)
+        clone.parent = self.parent[:]
+        clone.rank = self.rank[:]
+        clone.count = self.count
+        return clone
+
+
+class HypercubeNetEnumerator:
+    """
+    Enumerates spanning trees of facet adjacency and filters those that unfold to a valid net.
+    Unfolded nets are represented in (n-1)-dimensional coordinates (root-face plane).
+    """
+
+    def __init__(self, hypercube, face_dimension=None):
+        if not isinstance(hypercube, Hypercube):
+            raise TypeError("hypercube must be an instance of Hypercube.")
+        self.hypercube = hypercube
+        self.n = hypercube.dimension
+        self.face_dim = self.n - 1 if face_dimension is None else face_dimension
+        if self.face_dim != self.n - 1:
+            raise ValueError("Only facet nets (face_dimension = n-1) are supported.")
+        if self.n < 2:
+            raise ValueError("Facet nets require hypercube dimension >= 2.")
+
+        self.faces = list(hypercube.get_k_faces(self.face_dim))
+        if not self.faces:
+            raise ValueError(f"No faces of dimension {self.face_dim} exist for this hypercube.")
+
+        self.face_id_by_key = {
+            frozenset(face.vertices_indices): idx
+            for idx, face in enumerate(self.faces)
+        }
+        self.face_vertices_indices = [face.vertices_indices for face in self.faces]
+        self.face_positions_nd = [
+            np.array([hypercube.vertices_map[idx].coordinates.copy() for idx in face.vertices_indices])
+            for face in self.faces
+        ]
+        self.adjacency = self._build_adjacency()
+
+    def _build_adjacency(self):
+        adjacency = {i: [] for i in range(len(self.faces))}
+        required_shared_vertices = 2 ** (self.face_dim - 1)
+        for i in range(len(self.faces)):
+            for j in range(i + 1, len(self.faces)):
+                shared = self.face_vertices_indices[i] & self.face_vertices_indices[j]
+                if len(shared) == required_shared_vertices:
+                    adjacency[i].append(j)
+                    adjacency[j].append(i)
+        return adjacency
+
+    def iter_spanning_trees(self, max_trees=None):
+        edges = []
+        for i in range(len(self.faces)):
+            for j in self.adjacency[i]:
+                if i < j:
+                    edges.append((i, j))
+        edges.sort()
+
+        n = len(self.faces)
+        target_edges = n - 1
+
+        def backtrack(edge_idx, dsu, chosen):
+            if max_trees is not None and len(results) >= max_trees:
+                return
+            if len(chosen) > target_edges:
+                return
+            if edge_idx == len(edges):
+                if len(chosen) == target_edges and dsu.count == 1:
+                    results.append(chosen[:])
+                return
+
+            a, b = edges[edge_idx]
+
+            # Option 1: include this edge if it doesn't create a cycle.
+            dsu_in = dsu.copy()
+            if dsu_in.union(a, b):
+                chosen.append((a, b))
+                backtrack(edge_idx + 1, dsu_in, chosen)
+                chosen.pop()
+
+            # Option 2: exclude this edge.
+            backtrack(edge_idx + 1, dsu, chosen)
+
+        results = []
+        backtrack(0, _DisjointSet(len(self.faces)), [])
+        for tree_edges in results:
+            yield tree_edges
+
+    def iter_nets(self, root_face_id=0, max_trees=None, overlap_eps=1e-8):
+        for tree_edges in self.iter_spanning_trees(max_trees=max_trees):
+            unfolded = self._unfold_tree(tree_edges, root_face_id=root_face_id)
+            if unfolded is None:
+                continue
+            if self._is_non_overlapping(unfolded, eps=overlap_eps):
+                yield UnfoldedNet(
+                    dimension=self.face_dim,
+                    face_vertices=unfolded,
+                    tree_edges=tree_edges,
+                    root_face_id=root_face_id,
+                )
+
+    def _unfold_tree(self, tree_edges, root_face_id=0):
+        # Build tree adjacency and parent map from tree_edges.
+        tree_adj = {i: [] for i in range(len(self.faces))}
+        for a, b in tree_edges:
+            tree_adj[a].append(b)
+            tree_adj[b].append(a)
+
+        if root_face_id not in tree_adj:
+            return None
+
+        parent = {root_face_id: None}
+        queue = [root_face_id]
+        order = [root_face_id]
+        while queue:
+            u = queue.pop(0)
+            for v in tree_adj[u]:
+                if v in parent:
+                    continue
+                parent[v] = u
+                queue.append(v)
+                order.append(v)
+
+        if len(parent) != len(self.faces):
+            return None
+
+        children = {i: [] for i in range(len(self.faces))}
+        for child_id, parent_id in parent.items():
+            if parent_id is not None:
+                children[parent_id].append(child_id)
+
+        positions_nd = [coords.copy() for coords in self.face_positions_nd]
+        center = np.full(self.n, 0.5, dtype=float)
+
+        for face_id in order[1:]:
+            parent_id = parent[face_id]
+            shared = self.face_vertices_indices[face_id] & self.face_vertices_indices[parent_id]
+            shared_coords = self._coords_for_indices(positions_nd[parent_id], shared, parent_id)
+            axis_basis = self._compute_basis(shared_coords, self.face_dim - 1)
+            comp_basis = self._orthonormal_complement(axis_basis)
+
+            parent_coords = positions_nd[parent_id]
+            child_coords = positions_nd[face_id]
+            parent_normal = self._face_normal(parent_coords, center)
+            child_normal = self._face_normal(child_coords, center)
+
+            angle = self._angle_between_in_plane(comp_basis, child_normal, parent_normal)
+            if np.isnan(angle):
+                return None
+
+            rotation = self._rotation_in_plane(comp_basis[0], comp_basis[1], angle)
+            pivot = shared_coords.mean(axis=0)
+            for sub_id in self._iter_subtree(face_id, children):
+                positions_nd[sub_id] = self._apply_rotation(positions_nd[sub_id], rotation, pivot)
+
+        root_coords = positions_nd[root_face_id]
+        root_origin = root_coords.mean(axis=0)
+        root_basis = self._root_axis_basis(root_coords)
+        if root_basis is None:
+            root_basis = self._compute_basis(root_coords, self.face_dim)
+        unfolded = {}
+        for face_id, coords in enumerate(positions_nd):
+            unfolded[face_id] = np.array([root_basis @ (v - root_origin) for v in coords])
+        return unfolded
+
+    def _coords_for_indices(self, face_coords, indices, face_id):
+        coords = []
+        index_to_vertex = list(self.face_vertices_indices[face_id])
+        for idx in indices:
+            coords.append(face_coords[index_to_vertex.index(idx)])
+        return np.array(coords)
+
+    def _face_normal(self, coords, center):
+        centered = coords - coords.mean(axis=0)
+        _, _, vt = np.linalg.svd(centered, full_matrices=True)
+        normal = vt[self.face_dim]
+        if np.dot(normal, coords.mean(axis=0) - center) < 0:
+            normal = -normal
+        return normal / np.linalg.norm(normal)
+
+    def _compute_basis(self, coords, target_dim):
+        if target_dim == 0:
+            return np.zeros((0, self.n))
+        centered = coords - coords.mean(axis=0)
+        _, _, vt = np.linalg.svd(centered, full_matrices=False)
+        return vt[:target_dim]
+
+    def _orthonormal_complement(self, axis_basis):
+        if axis_basis.shape[0] == 0:
+            _, _, vt = np.linalg.svd(np.zeros((1, self.n)), full_matrices=True)
+            return vt[:2]
+        _, _, vt = np.linalg.svd(axis_basis, full_matrices=True)
+        return vt[axis_basis.shape[0]:axis_basis.shape[0] + 2]
+
+    def _angle_between_in_plane(self, plane_basis, vec_from, vec_to):
+        a = plane_basis @ vec_from
+        b = plane_basis @ vec_to
+        na = np.linalg.norm(a)
+        nb = np.linalg.norm(b)
+        if na < 1e-12 or nb < 1e-12:
+            return float("nan")
+        a /= na
+        b /= nb
+        cross = a[0] * b[1] - a[1] * b[0]
+        dot = np.clip(a[0] * b[0] + a[1] * b[1], -1.0, 1.0)
+        return float(np.arctan2(cross, dot))
+
+    def _rotation_in_plane(self, e1, e2, angle):
+        r = np.identity(self.n)
+        e1 = e1.reshape(self.n, 1)
+        e2 = e2.reshape(self.n, 1)
+        sin_theta = np.sin(angle)
+        cos_theta = np.cos(angle)
+        r += sin_theta * (e2 @ e1.T - e1 @ e2.T)
+        r += (cos_theta - 1.0) * (e1 @ e1.T + e2 @ e2.T)
+        return r
+
+    def _apply_rotation(self, coords, rotation, pivot):
+        return np.array([pivot + rotation @ (v - pivot) for v in coords])
+
+    def _iter_subtree(self, face_id, children):
+        stack = [face_id]
+        while stack:
+            current = stack.pop()
+            yield current
+            stack.extend(children[current])
+
+    def _is_non_overlapping(self, unfolded, eps=1e-8):
+        face_ids = list(unfolded.keys())
+        bboxes = {}
+        for face_id in face_ids:
+            coords = unfolded[face_id]
+            bboxes[face_id] = (coords.min(axis=0), coords.max(axis=0))
+
+        for i in range(len(face_ids)):
+            for j in range(i + 1, len(face_ids)):
+                a_min, a_max = bboxes[face_ids[i]]
+                b_min, b_max = bboxes[face_ids[j]]
+                overlap = True
+                for k in range(self.face_dim):
+                    if min(a_max[k], b_max[k]) - max(a_min[k], b_min[k]) <= eps:
+                        overlap = False
+                        break
+                if overlap:
+                    return False
+        return True
+
+    def _root_axis_basis(self, root_coords, tol=1e-8):
+        """
+        Builds a canonical axis-aligned basis for a facet of a hypercube.
+        Returns None if a fixed axis cannot be identified.
+        """
+        fixed_axis = None
+        for axis in range(self.n):
+            if np.allclose(root_coords[:, axis], root_coords[0, axis], atol=tol):
+                fixed_axis = axis
+                break
+        if fixed_axis is None:
+            return None
+
+        basis = []
+        for axis in range(self.n):
+            if axis == fixed_axis:
+                continue
+            e = np.zeros(self.n, dtype=float)
+            e[axis] = 1.0
+            basis.append(e)
+        return np.array(basis, dtype=float)
+
+    @staticmethod
+    def net_signature_2d(unfolded_net, tol=1e-6):
+        """
+        Canonical signature for 2D unfolded nets up to translation/rotation/reflection.
+        Works for cube nets (n=3).
+        """
+        if isinstance(unfolded_net, UnfoldedNet):
+            face_vertices = unfolded_net.face_vertices
+        else:
+            face_vertices = unfolded_net
+
+        points = []
+        for coords in face_vertices.values():
+            for v in np.array(coords, dtype=float):
+                points.append(v)
+        if not points:
+            return ()
+
+        points = np.array(points, dtype=float)
+        points = np.round(points / tol) * tol
+
+        rotations = [
+            np.array([[1.0, 0.0], [0.0, 1.0]]),
+            np.array([[0.0, -1.0], [1.0, 0.0]]),
+            np.array([[-1.0, 0.0], [0.0, -1.0]]),
+            np.array([[0.0, 1.0], [-1.0, 0.0]]),
+        ]
+        reflect = np.array([[1.0, 0.0], [0.0, -1.0]])
+
+        best = None
+        for rot in rotations:
+            for is_reflect in (False, True):
+                transform = reflect @ rot if is_reflect else rot
+                transformed = points @ transform.T
+                mins = transformed.min(axis=0)
+                normalized = transformed - mins
+                normalized = np.round(normalized / tol) * tol
+                normalized = normalized[np.lexsort((normalized[:, 1], normalized[:, 0]))]
+                signature = tuple(map(tuple, normalized))
+                if best is None or signature < best:
+                    best = signature
+
+        return best
+
+    @staticmethod
+    def net_signature_3d(unfolded_net, tol=1e-6):
+        """
+        Canonical signature for 3D unfolded nets up to translation/rotation/reflection.
+        Works for tesseract nets (n=4).
+        """
+        if isinstance(unfolded_net, UnfoldedNet):
+            face_vertices = unfolded_net.face_vertices
+        else:
+            face_vertices = unfolded_net
+
+        # Use each cube's minimal corner as a translation-invariant descriptor.
+        # This works because unfolded tesseract nets are axis-aligned polycubes.
+        cube_mins = []
+        for coords in face_vertices.values():
+            coords = np.array(coords, dtype=float)
+            if coords.shape[1] != 3 or coords.shape[0] < 8:
+                continue
+            mins = coords.min(axis=0)
+            cube_mins.append(mins)
+        if not cube_mins:
+            return ()
+
+        points = np.array(cube_mins, dtype=float)
+        points = np.round(points / tol) * tol
+
+        # Generate all axis permutations with sign flips (48 total).
+        transforms = []
+        axes = [0, 1, 2]
+        for perm in itertools.permutations(axes):
+            for signs in itertools.product([-1.0, 1.0], repeat=3):
+                mat = np.zeros((3, 3), dtype=float)
+                for i, axis in enumerate(perm):
+                    mat[i, axis] = signs[i]
+                transforms.append(mat)
+
+        best = None
+        for mat in transforms:
+            transformed = points @ mat.T
+            mins = transformed.min(axis=0)
+            normalized = transformed - mins
+            normalized = np.round(normalized / tol) * tol
+            normalized = normalized[np.lexsort((normalized[:, 2], normalized[:, 1], normalized[:, 0]))]
+            signature = tuple(map(tuple, normalized))
+            if best is None or signature < best:
+                best = signature
+
+        return best

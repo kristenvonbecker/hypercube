@@ -4,7 +4,11 @@ import pytest
 import numpy as np
 import math
 
-from src.hypercube_factory.geometry.structure import Hypercube, HypercubeNet
+from src.hypercube_factory.geometry.structure import (
+    Hypercube,
+    HypercubeNet,
+    HypercubeNetEnumerator,
+)
 
 # --- Test Data ---
 
@@ -246,3 +250,31 @@ def test_hypercube_net_rotation_invariants():
     net.rotate_subtree(child_face.face_id, -angle)
     for idx in child_face.vertices_indices:
         assert np.allclose(child_face.vertex_positions[idx], child_initial[idx], atol=1e-6)
+
+
+def test_cube_net_enumerator_unfolds_to_2d():
+    cube = Hypercube(3)
+    enumerator = HypercubeNetEnumerator(cube)
+
+    nets = list(enumerator.iter_nets(max_trees=500))
+    assert len(nets) > 0, "Expected at least one cube net."
+
+    net = nets[0]
+    assert net.dimension == 2
+    assert len(net.face_vertices) == 6
+
+    for face_id, coords in net.face_vertices.items():
+        coords = np.array(coords, dtype=float)
+        assert coords.shape[1] == 2
+        assert coords.shape[0] == 4, f"Face {face_id} should have 4 vertices."
+
+
+def test_cube_net_unique_count():
+    cube = Hypercube(3)
+    enumerator = HypercubeNetEnumerator(cube)
+
+    signatures = set()
+    for net in enumerator.iter_nets(max_trees=None):
+        signatures.add(enumerator.net_signature_2d(net))
+
+    assert len(signatures) == 11
