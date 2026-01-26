@@ -20,6 +20,7 @@ def main():
     """Render all unique cube nets in a single 2D subplot grid."""
     cube = Hypercube(3)
     enumerator = HypercubeNetEnumerator(cube)
+    palette = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4"]
 
     max_trees = None
     max_unique_nets_to_show = 11
@@ -68,7 +69,7 @@ def main():
     for idx, net in enumerate(nets_to_plot):
         row = idx // cols + 1
         col = idx % cols + 1
-        for trace in net_traces_2d(net):
+        for trace in net_traces_2d(net, face_palette=palette):
             fig.add_trace(trace, row=row, col=col)
 
     for i in range(1, rows * cols + 1):

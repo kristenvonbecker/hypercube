@@ -21,6 +21,16 @@ def main():
     """Enumerate unique tesseract nets and build a single-page viewer."""
     tesseract = Hypercube(4)
     enumerator = HypercubeNetEnumerator(tesseract)
+    palette = [
+        "#e6194b",
+        "#3cb44b",
+        "#ffe119",
+        "#4363d8",
+        "#f58231",
+        "#911eb4",
+        "#46f0f0",
+        "#f032e6",
+    ]
 
     unique_nets = []
     seen_signatures = set()
@@ -44,11 +54,11 @@ def main():
     # Each unique net becomes a Plotly frame for quick Prev/Next navigation.
     frames = []
     for idx, net in enumerate(unique_nets):
-        traces = net_traces_3d(net)
+        traces = net_traces_3d(net, face_palette=palette)
         frames.append(go.Frame(data=traces, name=str(idx)))
 
     fig = go.Figure(
-        data=net_traces_3d(unique_nets[0]),
+        data=net_traces_3d(unique_nets[0], face_palette=palette),
         frames=frames,
     )
 

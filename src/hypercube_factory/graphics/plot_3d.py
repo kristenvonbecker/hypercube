@@ -348,6 +348,7 @@ def plot_hypercube_net_2d(
     face_color="rgba(255,165,0,0.35)",
     edge_color="blue",
     axis_equal=True,
+    face_palette=None,
 ):
     if unfolded_net is None or not getattr(unfolded_net, "face_vertices", None):
         print("No unfolded net faces to plot.")
@@ -357,6 +358,7 @@ def plot_hypercube_net_2d(
         unfolded_net,
         face_color=face_color,
         edge_color=edge_color,
+        face_palette=face_palette,
     )
 
     fig = go.Figure(data=traces)
@@ -374,13 +376,15 @@ def net_traces_2d(
     unfolded_net,
     face_color="rgba(255,165,0,0.35)",
     edge_color="blue",
+    face_palette=None,
 ):
     """Return Plotly traces for 2D unfolded nets (squares in a plane)."""
     if unfolded_net is None or not getattr(unfolded_net, "face_vertices", None):
         return []
 
     traces = []
-    for face_id, coords in unfolded_net.face_vertices.items():
+    face_items = sorted(unfolded_net.face_vertices.items(), key=lambda item: item[0])
+    for face_id, coords in face_items:
         coords = np.array(coords, dtype=float)
         if coords.shape[1] != 2 or len(coords) < 3:
             continue
@@ -390,6 +394,9 @@ def net_traces_2d(
         y = ordered[:, 1].tolist()
         x.append(ordered[0, 0])
         y.append(ordered[0, 1])
+        color = face_color
+        if face_palette:
+            color = face_palette[face_id % len(face_palette)]
         traces.append(
             go.Scatter(
                 x=x,
@@ -397,7 +404,7 @@ def net_traces_2d(
                 mode="lines",
                 line=dict(color=edge_color, width=2),
                 fill="toself",
-                fillcolor=face_color,
+                fillcolor=color,
                 name=f"Face {face_id}",
                 showlegend=False,
             )
@@ -410,17 +417,20 @@ def net_traces_3d(
     face_color="rgba(255,165,0,0.25)",
     edge_color="blue",
     edge_width=2,
+    face_palette=None,
 ):
     """Return Plotly traces for 3D unfolded nets (axis-aligned cubes)."""
     if unfolded_net is None or not getattr(unfolded_net, "face_vertices", None):
         return []
 
     face_vertices_list = []
+    face_colors = []
     edge_x = []
     edge_y = []
     edge_z = []
 
-    for coords in unfolded_net.face_vertices.values():
+    face_items = sorted(unfolded_net.face_vertices.items(), key=lambda item: item[0])
+    for face_id, coords in face_items:
         coords = np.array(coords, dtype=float)
         if coords.shape[1] != 3 or len(coords) < 8:
             continue
@@ -435,6 +445,7 @@ def net_traces_3d(
                     faces.append(face)
         for face in faces:
             face_vertices_list.append(face)
+            face_colors.append(face_palette[face_id % len(face_palette)] if face_palette else face_color)
             order = _order_face_vertices(face)
             ordered = face[order]
             for i in range(len(ordered)):
@@ -446,11 +457,18 @@ def net_traces_3d(
     traces = []
     if face_vertices_list:
         xs, ys, zs, tri_i, tri_j, tri_k = _triangulate_faces(face_vertices_list)
+        # Apply per-face colors by building a color list per triangle.
+        facecolor = []
+        tri_count = 0
+        for color in face_colors:
+            facecolor.extend([color, color])
+            tri_count += 2
+        facecolor = facecolor[:len(tri_i)]
         traces.append(
             go.Mesh3d(
                 x=xs, y=ys, z=zs,
                 i=tri_i, j=tri_j, k=tri_k,
-                color=face_color,
+                facecolor=facecolor,
                 opacity=0.6,
                 name="Faces",
                 flatshading=True,
