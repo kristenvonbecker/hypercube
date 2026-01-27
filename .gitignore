@@ -83,5 +83,4 @@ htmlcov/
 .history/
 
 # Generated demo artifacts
-output/*.html
-output/**/*.html
+artifacts/
