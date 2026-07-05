@@ -30,13 +30,19 @@ class ScadExporter:
 
     def export_cross_section(self, output_filename: str,
                              slice_value: float = 0.0,
-                             slice_dimension: int = None):
+                             slice_dimension: int = None,
+                             hyperplane_normal: list | tuple | np.ndarray | None = None,
+                             hyperplane_offset: float | None = None):
         """
         Generates a .scad file for a solid cross-section of the hypercube.
         """
         print(f"Exporting cross-section to {output_filename}...")
         scad_object = _generate_cross_section_scad_object(
-            self.hypercube, slice_dimension, slice_value
+            self.hypercube,
+            slice_dimension,
+            slice_value,
+            hyperplane_normal=hyperplane_normal,
+            hyperplane_offset=hyperplane_offset,
         )
         _save_to_scad(output_filename, scad_object)
 
@@ -67,12 +73,23 @@ def _generate_projection_scad_object(hypercube_obj: Hypercube, target_dim: int, 
     return union()(*scad_objects)
 
 
-def _generate_cross_section_scad_object(hypercube_obj: Hypercube, slice_dimension: int, slice_value: float):
+def _generate_cross_section_scad_object(
+    hypercube_obj: Hypercube,
+    slice_dimension: int,
+    slice_value: float,
+    hyperplane_normal: list | tuple | np.ndarray | None = None,
+    hyperplane_offset: float | None = None,
+):
     """Generates a solid2 object for a single hypercube cross-section."""
     if slice_dimension is None:
         slice_dimension = hypercube_obj.dimension - 1
 
-    vertices, faces = hypercube_obj.cross_section(slice_dimension, slice_value)
+    vertices, faces = hypercube_obj.cross_section(
+        slice_dimension,
+        slice_value,
+        hyperplane_normal=hyperplane_normal,
+        hyperplane_offset=hyperplane_offset,
+    )
 
     if vertices is None or len(vertices) == 0:
         print("Warning: No valid cross-section generated.")

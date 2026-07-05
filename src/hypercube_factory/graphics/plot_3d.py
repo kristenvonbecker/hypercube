@@ -2,6 +2,7 @@
 
 import numpy as np
 import plotly.graph_objects as go
+from scipy.spatial import ConvexHull
 
 
 def _pad_coords(coords, axis_indices=(0, 1, 2)):
@@ -51,6 +52,26 @@ def _triangulate_faces(face_vertices_list):
         vertex_offset += len(ordered)
 
     return xs, ys, zs, tri_i, tri_j, tri_k
+
+
+def _triangulate_convex_polyhedron(points, vertex_offset):
+    xs = []
+    ys = []
+    zs = []
+    tri_i = []
+    tri_j = []
+    tri_k = []
+    hull = ConvexHull(points)
+    for tri in hull.simplices:
+        p0, p1, p2 = points[tri]
+        xs.extend([p0[0], p1[0], p2[0]])
+        ys.extend([p0[1], p1[1], p2[1]])
+        zs.extend([p0[2], p1[2], p2[2]])
+        tri_i.append(vertex_offset + 0)
+        tri_j.append(vertex_offset + 1)
+        tri_k.append(vertex_offset + 2)
+        vertex_offset += 3
+    return xs, ys, zs, tri_i, tri_j, tri_k, vertex_offset, hull
 
 
 def plot_hypercube_3d(
@@ -488,3 +509,198 @@ def net_traces_3d(
         )
 
     return traces
+
+
+def net_traces_3d_from_frame(
+    frame,
+    face_color="rgba(255,165,0,0.25)",
+    edge_color="blue",
+    edge_width=2,
+    face_palette=None,
+):
+    """Return Plotly traces for a single folded frame (dict face_id -> vertex map)."""
+    if frame is None:
+        return []
+
+    xs = []
+    ys = []
+    zs = []
+    tri_i = []
+    tri_j = []
+    tri_k = []
+    facecolors = []
+    edge_x = []
+    edge_y = []
+    edge_z = []
+    vertex_offset = 0
+    edge_tol = 1.05
+
+    face_items = sorted(frame.items(), key=lambda item: item[0])
+    for face_id, vertex_map in face_items:
+        indices = sorted(vertex_map.keys())
+        coords = np.array([vertex_map[idx] for idx in indices], dtype=float)
+        if coords.size == 0:
+            continue
+        if coords.shape[1] < 3:
+            padded = np.zeros((coords.shape[0], 3), dtype=float)
+            padded[:, :coords.shape[1]] = coords
+            coords = padded
+
+        color = face_palette[face_id % len(face_palette)] if face_palette else face_color
+
+        if coords.shape[0] == 4:
+            order = _order_face_vertices(coords)
+            ordered = coords[order]
+            for point in ordered:
+                xs.append(point[0])
+                ys.append(point[1])
+                zs.append(point[2])
+            for idx in range(1, len(ordered) - 1):
+                tri_i.append(vertex_offset + 0)
+                tri_j.append(vertex_offset + idx)
+                tri_k.append(vertex_offset + idx + 1)
+                facecolors.append(color)
+            for i in range(len(ordered)):
+                j = (i + 1) % len(ordered)
+                edge_x.extend([ordered[i][0], ordered[j][0], None])
+                edge_y.extend([ordered[i][1], ordered[j][1], None])
+                edge_z.extend([ordered[i][2], ordered[j][2], None])
+            vertex_offset += len(ordered)
+            continue
+
+        if coords.shape[0] >= 4:
+            try:
+                tri_x, tri_y, tri_z, t_i, t_j, t_k, vertex_offset, hull = _triangulate_convex_polyhedron(
+                    coords,
+                    vertex_offset,
+                )
+            except Exception:
+                continue
+            xs.extend(tri_x)
+            ys.extend(tri_y)
+            zs.extend(tri_z)
+            tri_i.extend(t_i)
+            tri_j.extend(t_j)
+            tri_k.extend(t_k)
+            facecolors.extend([color] * len(t_i))
+            if coords.shape[0] == 8:
+                distances = []
+                for i in range(coords.shape[0]):
+                    for j in range(i + 1, coords.shape[0]):
+                        distances.append(np.linalg.norm(coords[i] - coords[j]))
+                min_dist = min(d for d in distances if d > 1e-12)
+                threshold = min_dist * edge_tol
+                for i in range(coords.shape[0]):
+                    for j in range(i + 1, coords.shape[0]):
+                        if np.linalg.norm(coords[i] - coords[j]) <= threshold:
+                            edge_x.extend([coords[i][0], coords[j][0], None])
+                            edge_y.extend([coords[i][1], coords[j][1], None])
+                            edge_z.extend([coords[i][2], coords[j][2], None])
+
+    traces = []
+    if tri_i:
+        traces.append(
+            go.Mesh3d(
+                x=xs,
+                y=ys,
+                z=zs,
+                i=tri_i,
+                j=tri_j,
+                k=tri_k,
+                facecolor=facecolors if facecolors else None,
+                color=None if facecolors else face_color,
+                opacity=0.6,
+                name="Faces",
+                flatshading=True,
+                showscale=False,
+            )
+        )
+
+    if edge_x:
+        traces.append(
+            go.Scatter3d(
+                x=edge_x,
+                y=edge_y,
+                z=edge_z,
+                mode="lines",
+                line=dict(color=edge_color, width=edge_width),
+                name="Edges",
+                showlegend=False,
+            )
+        )
+
+    return traces
+
+
+def plot_hypercube_net_frames_3d(
+    frames,
+    title="Hypercube Net Animation",
+    face_color="rgba(255,165,0,0.25)",
+    edge_color="blue",
+    edge_width=2,
+    face_palette=None,
+):
+    """Plot a slider-controlled animation over a list of frame dicts."""
+    if not frames:
+        print("No frames to plot.")
+        return
+
+    base_traces = net_traces_3d_from_frame(
+        frames[0],
+        face_color=face_color,
+        edge_color=edge_color,
+        edge_width=edge_width,
+        face_palette=face_palette,
+    )
+
+    plot_frames = []
+    for idx, frame in enumerate(frames):
+        traces = net_traces_3d_from_frame(
+            frame,
+            face_color=face_color,
+            edge_color=edge_color,
+            edge_width=edge_width,
+            face_palette=face_palette,
+        )
+        plot_frames.append(go.Frame(data=traces, name=str(idx)))
+
+    steps = []
+    for i in range(len(frames)):
+        steps.append(
+            dict(
+                method="animate",
+                args=[
+                    [str(i)],
+                    {
+                        "mode": "immediate",
+                        "frame": {"duration": 0, "redraw": True},
+                        "transition": {"duration": 0},
+                    },
+                ],
+                label=str(i + 1),
+            )
+        )
+
+    sliders = [
+        dict(
+            active=0,
+            currentvalue={"prefix": "Frame "},
+            pad={"t": 30},
+            steps=steps,
+        )
+    ]
+
+    fig = go.Figure(data=base_traces, frames=plot_frames)
+    fig.update_layout(
+        title=title,
+        showlegend=False,
+        sliders=sliders,
+        scene=dict(
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            zaxis=dict(visible=False),
+            aspectmode="data",
+        ),
+        margin=dict(l=0, r=0, b=0, t=40),
+    )
+    fig.show()
